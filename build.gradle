@@ -36,9 +36,9 @@ tasks.register('preview', JavaExec) {
     jvmArgs '-Djava.awt.headless=true'
 }
 
-tasks.named('test') {
-    if (hasProperty('failOnNoDiscoveredTests')) {
-        failOnNoDiscoveredTests = false
+tasks.named('test') { testTask ->
+    if (testTask.hasProperty('failOnNoDiscoveredTests')) {
+        testTask.failOnNoDiscoveredTests = false
     }
 }
 
