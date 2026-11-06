@@ -172,7 +172,8 @@ public final class TaskReferenceData
                     ItemID.SLAYER_ROCK_HAMMER, ItemID.SLAYER_ROCK_THROWNHAMMER, ItemID.GRANITE_HAMMER)); break;
             case "turoth": case "kurask":
                 if (style.equals("Melee")) { result.add(new Rule("Use leaf-bladed melee weaponry.", 3, ItemID.SLAYER_LEAFBLADED_SPEAR, ItemID.LEAFBLADED_SWORD, ItemID.LEAFBLADED_BATTLEAXE)); }
-                else { result.add(new Rule("Requires broad ammunition or Magic Dart. Compatible ranged/magic weapon validation is not implemented; weapon slot left blank.", 3)); }
+                else if (style.equals("Ranged")) { result.add(new Rule("Use compatible broad arrows, broad bolts or amethyst broad bolts.", 13, 4160, 11875, 21316)); }
+                else { result.add(new Rule("Magic Dart is required; its damage model is not implemented.", 3)); }
                 break;
             default: break;
         }

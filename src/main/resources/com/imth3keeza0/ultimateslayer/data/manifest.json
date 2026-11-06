@@ -1,24 +1,28 @@
 {
-  "schema": 1,
+  "schema": 2,
   "retrieved": "2026-11-05",
   "wikiCommit": "498bd2ae666c83b0af3ac2265076ed237a27d1aa",
   "requirementsCommit": "961011bda6daac734208b12bcd58c0e8660da730",
   "files": {
     "equipment": {
       "records": 5096,
-      "sha256": "b011719fb3a141e3108badb12f6348562d7f858dc13bd89cce97a93b32108a58"
+      "sha256": "6728932a401b776c04fc1bd27be78514df06e5a28de9e75d0131f3c5849a4bf2",
+      "upstreamPackagedSha256": "b011719fb3a141e3108badb12f6348562d7f858dc13bd89cce97a93b32108a58"
     },
     "monsters": {
       "records": 2921,
-      "sha256": "9b7bf5894bfd0d614df1b917701bb352cea4058fe760f0b99a16eb780cad57b4"
+      "sha256": "f0082e4cf897ae4cf1117b638be52fb4f592fcaf50c8bf2ff4c5cd797d5028ef",
+      "upstreamPackagedSha256": "9b7bf5894bfd0d614df1b917701bb352cea4058fe760f0b99a16eb780cad57b4"
     },
     "requirements": {
       "records": 2135,
-      "sha256": "af9b76399b603544bc2b6eb03816fd063262010b63c6550bc0a4cebbb115a27a"
+      "sha256": "d4892b302cc0c305b2d3d4c282411faa97762d183b0f136e60253efc91fc732c",
+      "upstreamPackagedSha256": "af9b76399b603544bc2b6eb03816fd063262010b63c6550bc0a4cebbb115a27a"
     },
     "spells": {
       "records": 61,
-      "sha256": "7f1004092d6b28cffe89ba0fbd923bf1215e93b390d968e0218f62facdbb609d"
+      "sha256": "a0fccdf3b90db87f7edbab0d01f6919aa9bb3a25fb50176660e316bd94fe63da",
+      "upstreamPackagedSha256": "7f1004092d6b28cffe89ba0fbd923bf1215e93b390d968e0218f62facdbb609d"
     },
     "tasks": {
       "records": 152,
@@ -26,9 +30,11 @@
     },
     "stances": {
       "records": 31,
-      "sha256": "7c78bfde17451939b8ac89ae4c2c9ef60b18e5f5f0b68f4a0586f637c5d70b09"
+      "sha256": "d4abebc934e2819146d14e663a23d7bf44db1ed63a6f3e4d1c7cb6e4e9cf9b14",
+      "upstreamPackagedSha256": "7c78bfde17451939b8ac89ae4c2c9ef60b18e5f5f0b68f4a0586f637c5d70b09"
     }
   },
   "taskSource": "https://github.com/runelite/runelite/blob/master/runelite-client/src/main/java/net/runelite/client/plugins/slayer/Task.java",
-  "stancesSource": "https://github.com/RSPSApp/osrsreboxed-db/blob/961011bda6daac734208b12bcd58c0e8660da730/data/items/weapon-stances.json"
+  "stancesSource": "https://github.com/RSPSApp/osrsreboxed-db/blob/961011bda6daac734208b12bcd58c0e8660da730/data/items/weapon-stances.json",
+  "transformation": "Readable dictionary normalization; equipment projects only runtime speed/category/inactive-state fields; live item names, slots and bonuses remain client metadata. Monster fields used by plugin and all requirement pairs preserved."
 }

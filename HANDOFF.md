@@ -1,31 +1,25 @@
-# Ultimate Slayer — v0.7.0 handoff
+# Ultimate Slayer v0.8.0 handoff — 6 November 2026
 
-Prepared 6 November 2026. Package UltimateSlayer-0.7.0-flat.zip. Development authorised. User confirmed v0.5.1 gear visibility; v0.6.0 supplied the offline catalog. This batch adds supported combat/loadout recommendations, the adapted clan logo, the AFK Timers-style information page and an upload under keeza1993. Do not treat DESIGN.md's original planning-only wording as current.
+Started from code matching GitHub main merge 3593873120feb46d12d921a19db045634b22faea: local baseline tree c91fe1060f903e8d63ef22f50bb60c90d319ef13 was identical. The original source working copy was clean and remains untouched; work is isolated in the 6 November chat folder. The intended IdeaProjects installation is untouched.
 
-## Install, run and source
+## Changes
 
-Extract flat ZIP contents directly into C:\Users\User\IdeaProjects\UltimateSlayer. JDK 17 / Gradle 9.6.0, Java target 11. Run gradlew.bat build, then gradlew.bat run. Safe/developer-mode launch retained. Work was done in the chat's isolated work/UltimateSlayer source; the user's intended installation was not overwritten. No Plugin Hub submission.
+Expanded ordinary target allowlist and supported ordinary melee weapons. Added Warped sceptre, dragon hunter lance draconic bonus, leaf-bladed battleaxe leafy bonus and granite hammer golembane bonus. Leafy target immunity also applies when browsing directly without a matching task; compatible broad ranged ammunition now works on leafy tasks. Hydra boss selection remains fixed, but phase-aware boss DPS is still unsupported.
 
-## New architecture
+Readable dictionary-normalized offline resources preserve all runtime fields and record counts; unused equipment reference fields are omitted because live metadata already supplies the item's name, slot and bonuses. Every monster runtime field, equipment speed/category/inactive-state and requirement pair was independently compared against v0.7 data. Original and derived hashes and all licences remain. Schema documented in docs/DATA_SCHEMA.md.
 
-CombatCalculator is original Java implementing published ordinary-PvM equations for the explicit supported target/weapon subset. It reports attack/defence rolls, accuracy, max hit, ticks and normal-attack DPS. It supports exact stances, observed boosts, optional prayer/on-task/charge assumptions, non-stacking Salve/Slayer effects, full normal/elite Void, crystal pieces, twenty elemental spells and three powered-staff families. COMBAT_MODEL.md documents excluded effects and special targets. Do not broaden capability claims merely because a monster/item exists in the catalog.
+## Validation
 
-LoadoutOptimizer evaluates complete owned loadouts with multiple weapon/stance/ordinary/Void/crystal starts, then whole-setup swaps. It preserves task/location protection, two-handed exclusivity, ammo compatibility and snapshot-only ownership. Limits: six ordinary armour candidates plus effect pieces per slot, all observed ammo, 24 starts, three passes, 40,000 evaluations. It is a bounded best-found search, not a global optimum proof. Standard magic requires loose runes for one cast; this is not trip endurance.
+JDK 17 targets Java 11; RuneLite latest stable Maven metadata was checked as 1.13.6 on 6 November. Full Gradle 9.6.0 offline build, all six invariant suites and comparison UI checks passed using a temporary local init script selecting the external javac executable. Default Gradle compiler workers cannot connect through this environment's restricted loopback sockets; the init workaround does not alter submitted build.gradle. Direct javac compilation and all suites, comparison and sidebar previews also passed. See VALIDATION.md for latest scope. No live in-game acceptance or FPS validation claimed.
 
-UltimateSlayerPanel runs the search on a cancellable background worker. Inputs/account/snapshot/target/style changes invalidate old results; applying a result changes only the sidebar. Worn gear is separately copied from live equipped IDs, never merged into saved ownership. Prayer-point decay and XP-only changes do not continually cancel owned results. Relevant observed attack/strength/ranged/magic boosts update damage inputs.
+## Submission
 
-WelcomeDialog follows AFK Timers' dark/cyan information-page style. It appears once, reopens via Info/settings and offers the exact existing optional clan invite https://discord.gg/UAAe6QEGD plus in-game contact Th3keeza0. Browsers open only on click. Branding replaces the timer with the Slayer skull/sword and preserves OSRS GEEZAS. Full transparent logo is in docs/images and packaged branding/logo.png; it is also used for the toolbar icon. Artwork generated with the built-in image tool from the existing AFK badge and Slayer skill reference; prompt/provenance recorded in docs/BRANDING.md.
+GitHub identity verified as keeza1993, ID 301443897. Source repository remains private. Preparing a source commit is not Plugin Hub publication. Public source is required by RuneLite's submission README; obtain the user's explicit visibility decision before changing it. No Plugin Hub PR created by this batch yet.
 
-## Contracts retained
+A local o200k_base source-size proxy is recorded in docs/REVIEW_SIZE.md; it is not a RuneLite bot verdict or development-token usage. Do not claim exact official review cost or automatic approval before the actual check runs.
 
-Information only: no combat, movement, prayer, banking, equipment or task-selection automation. No runtime HTTP, bank upload, telemetry, credentials, PIN/login-widget access or input hooks. The personal bank is enumerated once after each legitimate interface opening; withdraw/search/tab events do not recapture. Immutable coherent bank/inventory/equipment snapshots are local and character-specific with hashed profile names. Current carried/worn items stay separate. Clear suppresses that opening. Shared bounded LocalSnapshotIo retains cross-controller deletion ordering; process crashes can interrupt pending deletion.
+## Contracts
 
-Hidden required-item display does not disable draft constraints. Karuulm elite reward exemption is session-only explicit claim confirmation, not inferred from diary completion or owning an item. Unknown items/levels/quests/charges remain uncertain; unmodeled numerical cases fall back to the visible bonus shortlist. Preview/current assignment and assigned-area restrictions remain separate. Metadata remains in batches of 48 saved IDs; client reads and Swing writes retain their thread boundaries.
+Information only; no gameplay input/automation, runtime HTTP, telemetry, bank upload, PIN/login/credential inspection. One capture per legitimate bank opening; immutable local character-specific snapshots. Live worn/carried gear remains separate. Unknown items remain CHECK; hidden requirements constrain recommendations. Bounded best-found search remains cancellable and stale results are invalidated; applying changes only the sidebar draft. Modular UI, attribution and pinned data hashes retained.
 
-## Validation and upload identity
-
-Full build and six invariant suites plus comparison/sidebar/welcome renders pass against cached RuneLite client/API 1.13.6. CombatChecks proves ordinary hit chance against exhaustive small dice and checks fixed rolls/max hits/speeds, zero-to-one damage, set completeness, Salve non-stacking, crystal, powered attacks, boosts, required slots, ownership and joint-search choices. ComparisonPreview verifies background completion, apply-to-draft, stale account cancellation, style reset, optional clan page, transparent alpha and 225px bounds. No in-game validation or FPS claim.
-
-GitHub identity was independently verified as keeza1993 (ID 301443897), matching AFK Timers ownership and the installed Git account. Commit author/committer must use that identity, not a bot or alternate account. The browser creation attempt stopped because its URL could not be verified; direct authenticated GitHub operations are used instead. Upload only clean source/resources/docs; exclude bank data, build outputs, caches and credentials. Repository name ultimate-slayer, private for review. Final remote verification and commit details accompany the delivered release.
-
-Remaining work: expand explicitly modeled weapons/targets/effect combinations, independent in-game acceptance, full master/Mortimer and drop/profit data, broader transport/unlock/charge readers and supported Tile Packs integration. Keep data/reference scope distinct from combat validity. Retain third-party notices and pinned data hashes; no Wiki calculator implementation code was ported.
+Fang, Scythe, Twisted bow, Shadow, blowpipe, enchanted bolts and unmodeled boss/phase effects remain unavailable numerically. One-cast rune checking is not trip endurance. Read COMBAT_MODEL.md before expanding support.

@@ -178,7 +178,7 @@ public final class LoadoutOptimizer
         CombatCalculator.Result result = CombatCalculator.evaluate(set, inputs);
         if (!result.available) { excluded.add(result.reason); return null; }
         OwnedGearPlanner.Gear weapon = set.get(3);
-        if (inputs.mode.style.equals("Magic") && !(CombatCalculator.name(weapon).contains("trident") || CombatCalculator.name(weapon).contains("sanguinesti")))
+        if (inputs.mode.style.equals("Magic") && !CombatCalculator.poweredWeapon(weapon))
         {
             if (snapshot == null) { excluded.add("Rune ownership unknown; capture the bank before searching magic loadouts."); return null; }
             for (Map.Entry<Integer, Integer> entry : SpellPlanning.costs(inputs.spell, weapon.name).entrySet())

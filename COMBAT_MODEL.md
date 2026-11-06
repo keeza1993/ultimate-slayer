@@ -1,4 +1,4 @@
-# v0.7.0 combat model and search boundaries
+# v0.8.0 combat model and search boundaries
 
 ## Meaning of a result
 
@@ -17,9 +17,13 @@ Actual live offensive bonuses feed item models. Reference data supplies weapon c
 - Full normal/elite Void and per-piece crystal armour bonuses with the applicable crystal bow. Incomplete sets do not receive full-set effects; protective constraints still win.
 - Matching standard-element weakness, chaos-gauntlet bolt bonus and supported assumed prayers.
 
+Additional supported ordinary weapons: zombie axe, Sarachnis cudgel, brine sabre, granite longsword, abyssal dagger, Voidwaker and noxious halberd, plus ordinary metal axes/pickaxes. Special attacks and venom remain excluded. Warped sceptre uses floor((8*observed Magic+96)/37), four ticks and an explicit charge assumption. Dragon hunter lance applies 20% accuracy/damage to recorded draconic ordinary targets; granite hammer applies 30% to recorded golems. Leaf-bladed battleaxe applies 17.5% damage to turoth/kurask. Target leafy immunity also constrains direct monster browsing; supported ranged tasks require compatible broad ammunition.
+
+Added ordinary families include jellies, crawling hands, ogres, ogresses, hobgoblins, crabs, baby dragons, common humanoids and Stronghold training monsters. Unused/hidden/Nightmare Zone versions are excluded in addition to previous special-mode exclusions. This remains an explicit allowlist, not universal support.
+
 ## Withheld or outside scope
 
-Fang rerolls, Scythe multi-hits, Twisted bow scaling, Shadow amplification, blowpipe internal darts, dragonbane/demonbane overlaps, leaf battleaxe modifiers, obsidian/Berserker necklace, Inquisitor bonuses, many other conditional effects and special boss mechanics are not modeled. These items remain visible in the ordinary bonus shortlist. Charged/degrading states are assumptions, never inferred from ownership. Explicit inactive states stay blocked. Pouches, combination/sunfire runes, tomes, smoke-staff stacking and most non-elemental spells are not resolved by this model.
+Fang rerolls, Scythe multi-hits, Twisted bow scaling, Shadow amplification, blowpipe internal darts, dragon hunter crossbow/demonbane effects, obsidian/Berserker necklace, Inquisitor bonuses, many other conditional effects and special boss mechanics are not modeled. These items remain visible in the ordinary bonus shortlist. Charged/degrading states are assumptions, never inferred from ownership. Explicit inactive states stay blocked. Pouches, combination/sunfire runes, tomes, smoke-staff stacking and most non-elemental spells are not resolved by this model.
 
 Unknown equipment requirements remain CHECK conditions, not hidden items or verified eligibility. Imported skill-reference records can be outdated; their warnings are advisory. A modeled result may therefore be conditional on an unverified unlock even when the arithmetic is supported.
 
@@ -42,4 +46,4 @@ The worker is cancellable; account, snapshot, target, style, spell and assumptio
 - https://oldschool.runescape.wiki/w/Passive_effect
 - https://oldschool.runescape.wiki/w/Augury
 
-Reviewed 5 November 2026. CombatChecks includes independent fixed examples and brute-force dice comparisons, not merely calls that mirror implementation branches. No calculator implementation code was copied from these sources.
+Reviewed 6 November 2026. CombatChecks includes independent fixed examples and brute-force dice comparisons, not merely calls that mirror implementation branches. No calculator implementation code was copied from these sources.

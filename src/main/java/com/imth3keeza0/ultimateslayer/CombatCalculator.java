@@ -66,8 +66,10 @@ public final class CombatCalculator
     static boolean chargedItem(OwnedGearPlanner.Gear item)
     {
         String n = name(item);
-        return n.matches(".*(trident|sanguinesti|crystal|faerdhinen|saeldor|tentacle|barrows|ahrim|dharok|guthan|karil|torag|verac).*" );
+        return n.matches(".*(trident|sanguinesti|warped sceptre|crystal|faerdhinen|saeldor|tentacle|barrows|ahrim|dharok|guthan|karil|torag|verac).*" );
     }
+    static boolean poweredWeapon(OwnedGearPlanner.Gear weapon)
+    { String n = name(weapon); return n.contains("trident") || n.contains("sanguinesti") || n.equals("warped sceptre"); }
     static String blockedItem(OwnedGearPlanner.Gear gear, Inputs input)
     {
         String n = name(gear); ReferenceCatalog.Equipment ref = ReferenceCatalog.get().equipment.get(gear.id);
@@ -101,7 +103,7 @@ public final class CombatCalculator
         String n = name(weapon).replaceAll(" \\(p\\+*\\)| \\(or\\)", "");
         if (style.equals("Magic"))
         {
-            return n.contains("trident of the seas") || n.contains("trident of the swamp") || n.contains("sanguinesti staff")
+            return n.equals("warped sceptre") || n.contains("trident of the seas") || n.contains("trident of the swamp") || n.contains("sanguinesti staff")
                 || (List.of("Staff", "Bladed Staff").contains(weapon.category) && !n.matches(".*(harmonised|harmonized|dragon hunter|twinflame|purging|slayer's staff|sceptre|scepter|ancient).*"));
         }
         if (style.equals("Ranged"))
@@ -112,7 +114,8 @@ public final class CombatCalculator
             if (weapon.category.equals("Bow")) { return n.matches("(oak |willow |maple |yew |magic )?(shortbow|longbow)( \\(i\\))?") || n.startsWith("bow of faerdhinen") || n.startsWith("crystal bow") || n.equals("3rd age bow"); }
             return weapon.category.equals("Thrown") && n.matches("(bronze|iron|steel|black|mithril|adamant|rune|amethyst|dragon) (dart|knife)");
         }
-        if (n.matches("(bronze|iron|steel|black|white|mithril|adamant|rune|dragon) (dagger|sword|longsword|scimitar|mace|battleaxe|warhammer|2h sword|claws|spear|hasta)")) { return true; }
+        if (List.of("zombie axe", "leaf-bladed battleaxe", "dragon hunter lance", "sarachnis cudgel", "brine sabre", "granite longsword", "abyssal dagger", "voidwaker", "noxious halberd").contains(n)) { return true; }
+        if (n.matches("(bronze|iron|steel|black|white|mithril|adamant|rune|dragon) (dagger|sword|longsword|scimitar|mace|battleaxe|warhammer|2h sword|claws|spear|hasta|axe|pickaxe)")) { return true; }
         return List.of("abyssal whip","abyssal tentacle","ghrazi rapier","blade of saeldor","zamorakian hasta","zamorakian spear","saradomin sword","saradomin's blessed sword","saradomin godsword","bandos godsword","armadyl godsword","zamorak godsword","ancient godsword","abyssal bludgeon","elder maul","granite hammer","granite maul","leaf-bladed sword","leaf-bladed spear").contains(n) || n.startsWith("blade of saeldor (");
     }
     public static Result evaluate(Map<Integer, OwnedGearPlanner.Gear> loadout, Inputs input)
@@ -123,6 +126,13 @@ public final class CombatCalculator
         if (weapon == null) { return Result.unavailable("A supported owned weapon is needed."); }
         if (weapon.twoHanded && loadout.containsKey(5)) { return Result.unavailable("Two-handed weapon and shield cannot be combined."); }
         if (!ordinaryWeapon(weapon, style)) { return Result.unavailable("Weapon's normal attack or passive is not modeled: " + weapon.name); }
+        // Restrictions belong to the selected target even when browsing outside its task.
+        if (input.target.attributes.contains("leafy") || List.of("turoth", "kurask").contains(input.target.name.toLowerCase(Locale.ROOT)))
+        {
+            boolean leafMelee = OwnedGearPlanner.isMelee(style) && name(weapon).startsWith("leaf-bladed ");
+            boolean broadRanged = style.equals("Ranged") && name(loadout.get(13)).contains("broad");
+            if (!leafMelee && !broadRanged) { return Result.unavailable("Leafy target requires leaf-bladed melee or compatible broad ammunition; Magic Dart is not modeled."); }
+        }
         if (!style.equals("Magic") && modes(weapon, style).stream().noneMatch(m -> m.style.equals(style) && m.stance.equals(input.mode.stance))) { return Result.unavailable("That attack type/stance is not available on this weapon."); }
         for (TaskReferenceData.Rule rule : TaskReferenceData.rules(input.task, input.location, input.exemption, OwnedGearPlanner.isMelee(style) ? "Melee" : style))
         {
@@ -165,7 +175,7 @@ public final class CombatCalculator
         if (taskFactor > 1) { effects.add("Matching-task helmet/mask bonus (assumed on task)"); }
         if (salveFactor > 1) { effects.add("Salve undead bonus; does not stack with Slayer helmet"); }
         if (fullVoid) { effects.add(eliteVoid ? "Full elite Void set" : "Full Void set"); }
-        boolean powered = magic && (name(weapon).contains("trident") || name(weapon).contains("sanguinesti"));
+        boolean powered = magic && poweredWeapon(weapon);
         int ticks = magic ? powered ? 4 : 5 : weapon.speed - (ranged && input.mode.stance.equals("Rapid") ? 1 : 0);
         if (ticks < 1 || ticks > 10) { return Result.unavailable("Weapon attack speed is unavailable."); }
         int accuracyStyle = magic ? powered ? 3 : 0 : input.mode.stance.equalsIgnoreCase("accurate") ? 3 : input.mode.stance.equalsIgnoreCase("controlled") ? 1 : 0;
@@ -187,9 +197,9 @@ public final class CombatCalculator
             int base;
             if (powered)
             {
-                int needed = name(weapon).contains("swamp") ? 78 : name(weapon).contains("sanguinesti") ? 82 : 75;
+                int needed = name(weapon).equals("warped sceptre") ? 62 : name(weapon).contains("swamp") ? 78 : name(weapon).contains("sanguinesti") ? 82 : 75;
                 if (input.account.level(Skill.MAGIC) < needed) { return Result.unavailable("Powered staff base Magic requirement is unmet/unknown."); }
-                base = level / 3 - (name(weapon).contains("swamp") ? 2 : name(weapon).contains("sanguinesti") ? 1 : 5);
+                base = name(weapon).equals("warped sceptre") ? (8 * level + 96) / 37 : level / 3 - (name(weapon).contains("swamp") ? 2 : name(weapon).contains("sanguinesti") ? 1 : 5);
                 if (!input.charged) { return Result.unavailable("Powered staff charge assumption is needed."); }
                 warnings.add("Powered staff charges assumed; no internal runes/charges inspected.");
             }
@@ -227,6 +237,21 @@ public final class CombatCalculator
             }
             double targetFactor = salveFactor > 1 ? salveFactor : taskFactor;
             attack = (long) Math.floor(attack * targetFactor); maximum = (int) Math.floor(maximum * targetFactor);
+            if (!ranged && name(weapon).equals("dragon hunter lance") && input.target.attributes.contains("dragon"))
+            {
+                attack = attack * 6 / 5; maximum = maximum * 6 / 5;
+                effects.add("Dragon hunter lance: draconic accuracy and damage");
+            }
+            if (!ranged && name(weapon).equals("leaf-bladed battleaxe") && List.of("turoth", "kurask").contains(input.target.name.toLowerCase(Locale.ROOT)))
+            {
+                maximum = maximum * 47 / 40;
+                effects.add("Leaf-bladed battleaxe: turoth/kurask damage");
+            }
+            if (!ranged && name(weapon).equals("granite hammer") && input.target.attributes.contains("golem"))
+            {
+                attack = attack * 13 / 10; maximum = maximum * 13 / 10;
+                effects.add("Granite hammer: golem accuracy and damage");
+            }
         }
         if (attack < 0 || defence < 0 || maximum < 1) { return Result.unavailable("Negative-roll or zero-maximum edge case is not modeled."); }
         double accuracy = hitChance(attack, defence), mean = normalMean(maximum);

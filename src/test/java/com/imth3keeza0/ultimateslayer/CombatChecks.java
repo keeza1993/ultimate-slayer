@@ -87,6 +87,35 @@ public final class CombatChecks
         require(!rangedResult.setups.isEmpty() && rangedResult.setups.get(0).combat.effects.stream().anyMatch(e -> e.contains("Void")), "Multi-start search finds a full set that independent slot leaders would miss");
         boolean immutable = false; try { result.setups.get(0).gear.clear(); } catch (UnsupportedOperationException expected) { immutable = true; }
         require(immutable, "Search results are immutable across the worker/UI boundary");
+        OwnedGearPlanner.Gear zombieAxe = melee(28810,"Zombie axe",false,105,107,0,105,90);
+        CombatCalculator.Result zombieHit = CombatCalculator.evaluate(Map.of(3,zombieAxe), inputs(account,target,"Slash","aggressive","Unknown",false,false));
+        require(zombieHit.available && zombieHit.ticks == 5 && zombieHit.maxHit == 29, "Zombie axe uses five ticks and aggressive strength");
+        OwnedGearPlanner.Gear leafAxe = melee(20727,"Leaf-bladed battleaxe",false,92,92,0,72,92);
+        CombatCalculator.Result leafBase = CombatCalculator.evaluate(Map.of(3,leafAxe), inputs(account,target,"Crush","aggressive","Unknown",false,false));
+        CombatCalculator.Result leafKurask = CombatCalculator.evaluate(Map.of(3,leafAxe), inputs(account,target("Kurask","",false,0,1,0,0),"Crush","aggressive","Kurasks",false,false));
+        require(leafBase.available && leafKurask.available && leafBase.maxHit == 27 && leafKurask.maxHit == 31, "Leaf battleaxe gets 17.5 percent damage only on leafy monsters");
+        require(leafBase.attackRoll == leafKurask.attackRoll, "Leaf battleaxe bonus does not increase accuracy");
+        require(!CombatCalculator.evaluate(Map.of(3,whip),inputs(account,target("Kurask","",false,0,1,0,0),"Slash","accurate","Unknown",false,false)).available, "Direct monster browsing cannot bypass leafy immunity");
+        OwnedGearPlanner.Gear broad = new OwnedGearPlanner.Gear(11875,11875,"Broad bolts",13,false,0,0,0,0,100,0);
+        require(CombatCalculator.evaluate(Map.of(3,crossbow,13,broad),inputs(account,target("Kurask","",false,0,1,0,0),"Ranged","Rapid","Kurasks",false,false)).available, "Compatible broad ammunition supports real kurask tasks");
+        OwnedGearPlanner.Gear lance = melee(22978,"Dragon hunter lance",false,85,70,85,65,65);
+        com.google.gson.JsonObject dragonJson = new JsonParser().parse("{\"id\":99998,\"name\":\"Blue dragon\",\"skills\":{\"hp\":100,\"def\":0,\"magic\":1},\"defensive\":{},\"attributes\":[\"dragon\"]}").getAsJsonObject();
+        CombatCalculator.Result lanceNormal = CombatCalculator.evaluate(Map.of(3,lance),inputs(account,target,"Stab","controlled","Unknown",false,false));
+        CombatCalculator.Result lanceDragon = CombatCalculator.evaluate(Map.of(3,lance),inputs(account,new ReferenceCatalog.Monster(dragonJson),"Stab","controlled","Unknown",false,false));
+        require(lanceNormal.available && lanceDragon.available && lanceNormal.maxHit == 23 && lanceDragon.maxHit == 27 && lanceDragon.attackRoll == 19310, "Lance draconic damage and accuracy fixture");
+        OwnedGearPlanner.Gear graniteHammer = melee(21742,"Granite hammer",false,57,56,0,0,57);
+        com.google.gson.JsonObject golemJson = dragonJson.deepCopy(); golemJson.addProperty("name","Gargoyle");
+        com.google.gson.JsonArray golemTags = new com.google.gson.JsonArray(); golemTags.add("golem"); golemJson.add("attributes",golemTags);
+        CombatCalculator.Result golemHit = CombatCalculator.evaluate(Map.of(3,graniteHammer),inputs(account,new ReferenceCatalog.Monster(golemJson),"Crush","accurate","Unknown",false,false));
+        require(golemHit.available && golemHit.maxHit == 26 && golemHit.attackRoll == 17303, "Granite hammer golem accuracy and damage fixture");
+        OwnedGearPlanner.Gear warped = new OwnedGearPlanner.Gear(28585,28585,"Warped sceptre",3,false,0,0,12,0,0,0);
+        CombatCalculator.Result warpedHit = CombatCalculator.evaluate(Map.of(3,warped),inputs(account,target,"Magic","Spell","Unknown",false,true));
+        require(warpedHit.available && warpedHit.maxHit == 24 && warpedHit.ticks == 4, "Warped sceptre uses floor((8*Magic+96)/37) and four ticks");
+        require(!CombatCalculator.evaluate(Map.of(3,warped),inputs(account,target,"Magic","Spell","Unknown",false,false)).available, "Warped charges must be explicitly assumed");
+        OwnedGearPlanner.Gear emptyWarped = new OwnedGearPlanner.Gear(28583,28583,"Warped sceptre",3,false,0,0,12,0,0,0);
+        require(!CombatCalculator.evaluate(Map.of(3,emptyWarped),inputs(account,target,"Magic","Spell","Unknown",false,true)).available, "Known uncharged reference cannot be overridden by assumption");
+        require(!new LoadoutOptimizer(List.of(warped),new BankSnapshot(1,Map.of(),Map.of(),Map.of())).search(inputs(account,target,"Magic","Spell","Unknown",false,true),"Magic",false).setups.isEmpty(), "Warped built-in attack does not require unrelated loose spell runes");
+        require(target("Jelly","",false,0,1,0,0).ordinaryCombat && !target("Jelly","Nightmare Zone",false,0,1,0,0).ordinaryCombat, "Expanded ordinary target coverage excludes special versions");
         System.out.println("Combat dice proof, numeric fixtures, supported sets, protected joint-search and ownership checks passed.");
     }
     static AccountContext account(int level, int book)

@@ -32,14 +32,12 @@ public final class ReferenceCatalog
 
     public static final class Equipment
     {
-        public final int id, speed, stab, slash, crush;
-        public final String name, category, slot, version;
+        public final int id, speed;
+        public final String category, version;
         Equipment(JsonObject o)
         {
-            id = number(o, "id"); speed = number(o, "speed"); name = string(o, "name");
-            category = string(o, "category"); slot = string(o, "slot"); version = string(o, "version");
-            JsonObject attack = o.getAsJsonObject("offensive");
-            stab = number(attack, "stab"); slash = number(attack, "slash"); crush = number(attack, "crush");
+            id = number(o, "id"); speed = number(o, "speed");
+            category = string(o, "category"); version = string(o, "version");
         }
     }
     public static final class Monster
@@ -61,8 +59,8 @@ public final class ReferenceCatalog
             if (o.has("attributes")) { for (JsonElement tag : o.getAsJsonArray("attributes")) { tags.add(tag.getAsString().toLowerCase(Locale.ROOT)); } }
             attributes = java.util.Set.copyOf(tags);
             weaknessElement = w == null ? "" : string(w, "element"); weaknessPercent = w == null ? 0 : number(w, "severity");
-            ordinaryCombat = java.util.Set.of("abyssal demon","aberrant spectre","deviant spectre","banshee","twisted banshee","bloodveld","mutated bloodveld","dust devil","smoke devil","nechryael","greater nechryael","gargoyle","hydra","wyrm","drake","cave horror","cave crawler","cockatrice","basilisk","basilisk knight","rockslug","wall beast","turoth","kurask","skeletal wyvern","spitting wyvern","long-tailed wyvern","taloned wyvern","ancient wyvern","cave bug","cave slime","dark beast","brine rat","warped terrorbird","warped tortoise","desert lizard","hellhound","black demon","greater demon","lesser demon","red dragon","blue dragon","green dragon","black dragon","bronze dragon","iron dragon","steel dragon","frost dragon","adamant dragon","rune dragon","brutal black dragon","brutal blue dragon","brutal red dragon","goblin","cow","chicken","zombie","skeleton","hill giant","moss giant","fire giant","ice giant","troll","ice troll","ankou","dagannoth","suqah","kalphite worker","kalphite soldier","kalphite guardian","guard","man","woman","giant spider","scorpion","giant rat","giant bat","rat","wolf","bear","giant frog").contains(name.toLowerCase(Locale.ROOT))
-                && !version.toLowerCase(Locale.ROOT).matches(".*(quest|deadman|league|beta|challenge|hard mode).*" );
+            ordinaryCombat = java.util.Set.of("abyssal demon","aberrant spectre","deviant spectre","banshee","twisted banshee","bloodveld","mutated bloodveld","dust devil","smoke devil","nechryael","greater nechryael","gargoyle","hydra","wyrm","drake","cave horror","cave crawler","cockatrice","basilisk","basilisk knight","rockslug","wall beast","turoth","kurask","skeletal wyvern","spitting wyvern","long-tailed wyvern","taloned wyvern","ancient wyvern","cave bug","cave slime","dark beast","brine rat","warped terrorbird","warped tortoise","desert lizard","hellhound","black demon","greater demon","lesser demon","red dragon","blue dragon","green dragon","black dragon","bronze dragon","iron dragon","steel dragon","frost dragon","adamant dragon","rune dragon","brutal black dragon","brutal blue dragon","brutal red dragon","goblin","cow","chicken","zombie","skeleton","hill giant","moss giant","fire giant","ice giant","troll","ice troll","ankou","dagannoth","suqah","kalphite worker","kalphite soldier","kalphite guardian","guard","man","woman","giant spider","scorpion","giant rat","giant bat","rat","wolf","bear","giant frog","crawling hand","jelly","twisted jelly","ogre","ogress warrior","ogress shaman","hobgoblin","rock crab","sand crab","ammonite crab","giant rock crab","baby blue dragon","baby green dragon","baby red dragon","baby black dragon","mammoth","ice warrior","chaos dwarf","dwarf","earth warrior","chaos druid","dark warrior","pirate","bandit","rogue","thug","monk of zamorak","minotaur","flesh crawler","catablepon").contains(name.toLowerCase(Locale.ROOT))
+                && !version.toLowerCase(Locale.ROOT).matches(".*(quest|deadman|league|beta|challenge|hard mode|unused|hidden|nightmare zone).*" );
             weakness = w == null ? "No elemental weakness recorded" : string(w, "element") + " " + number(w, "severity") + "%";
         }
         @Override public String toString() { return name + (version.isEmpty() ? "" : " — " + version) + " (lvl " + level + ", #" + id + ")"; }
@@ -79,13 +77,26 @@ public final class ReferenceCatalog
         Map<Integer, Map<String, Integer>> req = new HashMap<>(); Map<String, List<String>> taskData = new LinkedHashMap<>(); Map<String, String> spellData = new java.util.TreeMap<>(); String problem = "";
         try
         {
-            for (JsonElement e : read("equipment").getAsJsonArray()) { Equipment item = new Equipment(e.getAsJsonObject()); if (item.id > 0) { items.put(item.id, item); } }
-            for (JsonElement e : read("monsters").getAsJsonArray()) { npcs.add(new Monster(e.getAsJsonObject())); }
-            for (Map.Entry<String, JsonElement> entry : read("requirements").getAsJsonObject().entrySet())
+            JsonObject equipmentData = read("equipment").getAsJsonObject();
+            for (JsonElement group : equipmentData.getAsJsonArray("groups"))
             {
-                Map<String, Integer> levels = new LinkedHashMap<>();
-                for (Map.Entry<String, JsonElement> level : entry.getValue().getAsJsonObject().entrySet()) { levels.put(level.getKey(), level.getValue().getAsInt()); }
-                req.put(Integer.parseInt(entry.getKey()), Map.copyOf(levels));
+                JsonArray g = group.getAsJsonArray(), p = equipmentData.getAsJsonArray("profiles").get(g.get(0).getAsInt()).getAsJsonArray();
+                for (JsonElement id : g.get(1).getAsJsonArray())
+                {
+                    JsonObject row = new JsonObject(); row.add("id", id); row.add("speed", p.get(0)); row.add("category", p.get(1)); row.add("version", p.get(2));
+                    Equipment item = new Equipment(row); items.put(item.id, item);
+                }
+            }
+            JsonObject monsterData = read("monsters").getAsJsonObject();
+            for (JsonElement e : monsterData.getAsJsonArray("rows")) { npcs.add(new Monster(expandMonster(monsterData, e.getAsJsonArray()))); }
+            JsonObject requirementData = read("requirements").getAsJsonObject();
+            for (JsonElement group : requirementData.getAsJsonArray("groups"))
+            {
+                JsonArray g = group.getAsJsonArray(); Map<String, Integer> levels = new LinkedHashMap<>();
+                JsonObject profile = requirementData.getAsJsonArray("profiles").get(g.get(0).getAsInt()).getAsJsonObject();
+                for (Map.Entry<String, JsonElement> level : profile.entrySet()) { levels.put(level.getKey(), level.getValue().getAsInt()); }
+                Map<String, Integer> immutable = Map.copyOf(levels);
+                for (JsonElement id : g.get(1).getAsJsonArray()) { req.put(id.getAsInt(), immutable); }
             }
             for (JsonElement e : read("tasks").getAsJsonArray())
             {
@@ -101,6 +112,22 @@ public final class ReferenceCatalog
         Map<String, List<Monster>> index = new HashMap<>();
         for (Monster monster : monsters) { index.computeIfAbsent(normalize(monster.name), ignored -> new ArrayList<>()).add(monster); }
         index.replaceAll((key, value) -> List.copyOf(value)); byName = Map.copyOf(index);
+    }
+    /** Schema 2 is transparent dictionary normalization; no encoded or executable data. */
+    private static JsonObject expandMonster(JsonObject data, JsonArray row)
+    {
+        JsonObject o = new JsonObject(); o.add("id", row.get(0));
+        o.add("name", data.getAsJsonArray("names").get(row.get(1).getAsInt()));
+        o.add("version", data.getAsJsonArray("versions").get(row.get(2).getAsInt()));
+        JsonArray p = data.getAsJsonArray("profiles").get(row.get(3).getAsInt()).getAsJsonArray();
+        o.add("level", p.get(0)); o.add("speed", p.get(1));
+        JsonObject skills = new JsonObject(); skills.add("hp", p.get(2)); skills.add("def", p.get(3)); skills.add("magic", p.get(4)); o.add("skills", skills);
+        JsonArray d = data.getAsJsonArray("defenses").get(p.get(5).getAsInt()).getAsJsonArray();
+        String[] keys = {"stab", "slash", "crush", "light", "standard", "heavy", "magic", "flat_armour"};
+        JsonObject defense = new JsonObject(); for (int i = 0; i < keys.length; i++) { defense.add(keys[i], d.get(i)); } o.add("defensive", defense);
+        o.add("attributes", data.getAsJsonArray("attributes").get(p.get(6).getAsInt()));
+        o.add("weakness", data.getAsJsonArray("weaknesses").get(p.get(7).getAsInt()));
+        return o;
     }
     private static JsonElement read(String name)
     {

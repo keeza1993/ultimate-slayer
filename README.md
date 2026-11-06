@@ -15,6 +15,9 @@ The development launcher retains safe mode. This is a development plugin, not a 
 
 ## New in this release
 
+- Expanded ordinary-target and melee weapon support, Warped sceptre, dragon hunter lance and leaf-bladed battleaxe bonuses; granite hammer golem bonus and broad-ammo leafy tasks. Hydra selection fix retained; boss-phase DPS remains unsupported.
+- Lean readable offline reference schema preserves runtime data while reducing review scope. See docs/DATA_SCHEMA.md.
+
 - A real normal-attack combat model for a declared subset of ordinary monsters/weapons: hit chance, max hit, attack interval and DPS estimates. It uses exact attack types and distinguishes NPC Magic defence from physical defence.
 - Complete owned-loadout comparisons: multiple weapons/stances, compatible ammunition, spells, protected equipment slots, two-handed constraints and supported full-set seeds. It can find a faster weapon or complete Void set that individual bonus leaders miss.
 - Supported modifiers: matching-task Slayer helmet/black mask, non-stacking Salve bonuses against undead, ordinary/elite Void, crystal armour with crystal bow/Bowfa, supported elemental weaknesses and chaos gauntlets. Trident/Sanguinesti built-in attacks require an explicit usable-charge assumption.
@@ -44,4 +47,4 @@ No runtime networking, bank uploads, telemetry, credentials, PIN/login-widget ac
 
 Want to join OSRS geezers? Add **Th3keeza0** in game or [join our Discord](https://discord.gg/UAAe6QEGD). The plugin opens this only when you click the button.
 
-Build, six invariant check suites and synthetic sidebar/comparison/welcome previews pass against cached RuneLite 1.13.6. No in-game acceptance or FPS claim is made. See VALIDATION.md. Data licences and pinned sources are retained in THIRD_PARTY.md, SOURCES.md, third-party/ and data/manifest.json. The calculator is an original Java implementation of published equations, not a port of the GPL Wiki calculator code.
+For v0.8.0, direct Java 11-target compilation, six invariant suites and synthetic previews pass against RuneLite 1.13.6. Gradle validation is recorded separately in VALIDATION.md. No in-game acceptance or FPS claim is made. See VALIDATION.md. Data licences and pinned sources are retained in THIRD_PARTY.md, SOURCES.md, third-party/ and data/manifest.json. The calculator is an original Java implementation of published equations, not a port of the GPL Wiki calculator code.
