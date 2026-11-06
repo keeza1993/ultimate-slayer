@@ -1,0 +1,11 @@
+.gradle/
+build/
+.idea/
+*.iml
+
+*.snapshot
+*.snapshot.tmp
+*.log
+.env
+.env.*
+credentials*

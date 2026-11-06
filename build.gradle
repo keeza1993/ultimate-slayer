@@ -1,0 +1,95 @@
+plugins { id 'java' }
+
+repositories {
+    mavenLocal()
+    maven {
+        url = 'https://repo.runelite.net'
+        content { includeGroupByRegex('net\\.runelite.*') }
+    }
+    mavenCentral()
+}
+
+group = 'com.imth3keeza0.ultimateslayer'
+version = '0.7.0'
+def runeLiteVersion = 'latest.release'
+
+dependencies {
+    compileOnly "net.runelite:client:${runeLiteVersion}"
+    testImplementation "net.runelite:client:${runeLiteVersion}"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release.set(11)
+}
+
+tasks.register('run', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.imth3keeza0.ultimateslayer.UltimateSlayerLauncher'
+    jvmArgs '-ea'
+    args '--developer-mode', '--safe-mode'
+}
+
+tasks.register('preview', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.imth3keeza0.ultimateslayer.SidebarPreview'
+    jvmArgs '-Djava.awt.headless=true'
+}
+
+tasks.named('test') {
+    failOnNoDiscoveredTests = false
+}
+
+tasks.register('verifyBank', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.imth3keeza0.ultimateslayer.BankSnapshotChecks'
+    jvmArgs '-ea'
+}
+
+tasks.named('check') { dependsOn 'verifyBank' }
+
+tasks.register('verifyGear', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.imth3keeza0.ultimateslayer.OwnedGearChecks'
+    jvmArgs '-ea'
+}
+
+tasks.named('check') { dependsOn 'verifyGear' }
+
+tasks.register('verifyReference', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.imth3keeza0.ultimateslayer.ReferenceChecks'
+    jvmArgs '-ea'
+}
+
+tasks.named('check') { dependsOn 'verifyReference' }
+
+tasks.register('verifyPlanning', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.imth3keeza0.ultimateslayer.PlanningChecks'
+    jvmArgs '-ea'
+}
+tasks.named('check') { dependsOn 'verifyPlanning' }
+tasks.register('verifyCatalog', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.imth3keeza0.ultimateslayer.CatalogChecks'
+    jvmArgs '-ea'
+}
+tasks.named('check') { dependsOn 'verifyCatalog' }
+tasks.named('jar') {
+    from('third-party') { into 'META-INF/licenses' }
+    from('THIRD_PARTY.md') { into 'META-INF' }
+    from('LICENSE') { into 'META-INF/licenses/ultimate-slayer' }
+}
+tasks.register('verifyCombat', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.imth3keeza0.ultimateslayer.CombatChecks'
+    jvmArgs '-ea'
+}
+tasks.named('check') { dependsOn 'verifyCombat' }
+tasks.register('previewComparison', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.imth3keeza0.ultimateslayer.ComparisonPreview'
+    jvmArgs '-ea', '-Djava.awt.headless=true'
+}
+tasks.named('check') { dependsOn 'previewComparison' }
