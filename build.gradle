@@ -37,7 +37,9 @@ tasks.register('preview', JavaExec) {
 }
 
 tasks.named('test') {
-    failOnNoDiscoveredTests = false
+    if (hasProperty('failOnNoDiscoveredTests')) {
+        failOnNoDiscoveredTests = false
+    }
 }
 
 tasks.register('verifyBank', JavaExec) {
