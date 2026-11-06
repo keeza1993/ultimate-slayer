@@ -116,6 +116,8 @@ public final class ReferenceCatalog
     public List<Monster> forTask(String name)
     {
         String key = normalize(name); TreeSet<String> targets = new TreeSet<>(); targets.add(key); targets.add(singular(key));
+        // The bundled task aliases omit the boss that can fulfil a hydra assignment.
+        if (singular(key).equals("hydra")) { targets.add("alchemical hydra"); }
         for (Map.Entry<String, List<String>> task : tasks.entrySet())
         {
             if (normalize(task.getKey()).equals(key) || singular(normalize(task.getKey())).equals(singular(key)))

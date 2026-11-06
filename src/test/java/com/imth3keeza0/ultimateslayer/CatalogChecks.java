@@ -21,6 +21,14 @@ public final class CatalogChecks
         require(catalog.equipment.size() == 5096 && catalog.monsters.size() == 2921, "Packaged dataset counts match manifest");
         require(catalog.requirements.size() == 2135 && catalog.tasks.size() == 152 && catalog.spells.size() == 61, "Requirements, task and spell resources are packaged");
         require(catalog.forTask("Dust devils").size() >= 3 && catalog.forTask("Dust devil").size() >= 3, "Task and singular monster names find multiple variants");
+        for (String task : List.of("Hydras", "Hydra", "The Hydras", " hydras "))
+        {
+            List<ReferenceCatalog.Monster> hydras = catalog.forTask(task);
+            require(hydras.stream().anyMatch(m -> m.name.equals("Hydra")), "Hydra task retains ordinary hydras");
+            require(hydras.stream().filter(m -> m.name.equals("Alchemical Hydra")).count() == 4, "Hydra task includes every boss phase");
+            require(hydras.stream().filter(m -> m.name.equals("Alchemical Hydra")).noneMatch(m -> m.ordinaryCombat), "Boss phases do not acquire ordinary DPS support");
+        }
+        require(catalog.forTask("The Alchemical Hydra").size() == 4, "Direct boss task still resolves its phases");
         require(catalog.search("dust", 2).size() == 2 && catalog.search("x", 20).isEmpty(), "Search is bounded and rejects tiny queries");
         require(catalog.forTask(null).isEmpty() && catalog.forTask("No such monster").isEmpty(), "Unknown tasks never choose a substitute monster");
         require(List.of(catalog.taskNames()).contains("Current task") && List.of(catalog.taskNames()).contains("Zulrah"), "Whole reference catalog is browsable");
