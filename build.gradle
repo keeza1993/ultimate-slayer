@@ -78,11 +78,6 @@ tasks.register('verifyCatalog', JavaExec) {
     jvmArgs '-ea'
 }
 tasks.named('check') { dependsOn 'verifyCatalog' }
-tasks.named('jar') {
-    from('third-party') { into 'META-INF/licenses' }
-    from('THIRD_PARTY.md') { into 'META-INF' }
-    from('LICENSE') { into 'META-INF/licenses/ultimate-slayer' }
-}
 tasks.register('verifyCombat', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.imth3keeza0.ultimateslayer.CombatChecks'
