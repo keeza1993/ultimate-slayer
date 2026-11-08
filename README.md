@@ -1,29 +1,18 @@
-# Ultimate Slayer — 0.7.0
+# Ultimate Slayer
 
 <img src="docs/images/ultimate-slayer-logo.png" alt="OSRS GEEZAS Ultimate Slayer" width="360">
 
-Created by **Th3keeza0** for **OSRS geezers**. Information and planning only; no gameplay automation.
+Plan Slayer tasks and compare equipment you own from a RuneLite sidebar. Created by **Th3keeza0** for **OSRS geezers**.
 
-## Install and run
+## Features
 
-Extract the flat ZIP directly into C:\Users\User\IdeaProjects\UltimateSlayer, replacing matching files. build.gradle, gradlew.bat and src belong directly in that folder. Use JDK 17, Gradle 9.6.0; source target Java 11.
+- View Slayer task and monster variant information.
+- Capture a local, character-specific equipment snapshot when you open your personal bank.
+- Compare owned melee, ranged and magic setups for supported normal attacks.
+- Review equipment requirements, spell plans and combat assumptions before choosing a setup.
+- Enable the modules you want in plugin settings.
 
-    .\gradlew.bat build
-    .\gradlew.bat run
-
-The development launcher retains safe mode. This is a development plugin, not a Plugin Hub release. Jagex account help: https://github.com/runelite/runelite/wiki/Using-Jagex-Accounts
-
-## New in this release
-
-- Expanded ordinary-target and melee weapon support, Warped sceptre, dragon hunter lance and leaf-bladed battleaxe bonuses; granite hammer golem bonus and broad-ammo leafy tasks. Hydra selection fix retained; boss-phase DPS remains unsupported.
-- Lean readable offline reference schema preserves runtime data while reducing review scope. See docs/DATA_SCHEMA.md.
-
-- A real normal-attack combat model for a declared subset of ordinary monsters/weapons: hit chance, max hit, attack interval and DPS estimates. It uses exact attack types and distinguishes NPC Magic defence from physical defence.
-- Complete owned-loadout comparisons: multiple weapons/stances, compatible ammunition, spells, protected equipment slots, two-handed constraints and supported full-set seeds. It can find a faster weapon or complete Void set that individual bonus leaders miss.
-- Supported modifiers: matching-task Slayer helmet/black mask, non-stacking Salve bonuses against undead, ordinary/elite Void, crystal armour with crystal bow/Bowfa, supported elemental weaknesses and chaos gauntlets. Trident/Sanguinesti built-in attacks require an explicit usable-charge assumption.
-- Compare all supported styles or just the selected style. Choose observed level boosts, an assumed prayer, on-task status and charged/degrading usability. These are planning assumptions; they do not activate anything in game. They reset on account changes.
-- Run the search on a background worker, then choose **Show in draft** to display a result. Inputs, account transitions and module changes invalidate stale results. Current worn gear is evaluated separately, never added to an old ownership snapshot.
-- The clan logo now has the Slayer skull/sword behind the existing clan artwork instead of the stopwatch. A matching AFK Timers-style welcome explains the basics, privacy and optional clan invitation. Reopen it with **Info** or **Show welcome**.
+The plugin provides information and planning only. It never equips items, moves your character or performs game actions.
 
 ## Use it
 
@@ -39,12 +28,14 @@ The original bonus shortlist remains available whenever a numerical model is una
 
 The offline catalog retains 2,921 monster/variant records, 5,096 equipment records, 152 task/alias groups, 2,135 advisory item skill entries and 61 spell names/books. Catalog coverage is broader than combat-model coverage. Supported rune planning covers twenty standard elemental spells.
 
-The combat model deliberately withholds numerical recommendations for unmodeled target mechanics and weapons/passives such as Fang, Scythe, Twisted bow, Shadow, blowpipe and enchanted-bolt procs. Normal attacks exclude special attacks, poison/burn, AoE, regeneration, overkill and downtime. See COMBAT_MODEL.md and COVERAGE.md for boundaries. Full master/Mortimer probabilities, drop/profit tables and Tile Packs remain future work.
+The combat model deliberately withholds numerical recommendations for unmodeled target mechanics and weapons/passives such as Fang, Scythe, Twisted bow, Shadow, blowpipe and enchanted-bolt procs. Normal attacks exclude special attacks, poison/burn, AoE, regeneration, overkill and downtime. See COMBAT_MODEL.md and COVERAGE.md for boundaries. Master assignment probabilities, drop/profit tables and Tile Packs integration are not currently included.
 
 No runtime networking, bank uploads, telemetry, credentials, PIN/login-widget access or game input. Snapshots remain local and character-specific. The bank is enumerated once per legitimate opening; comparisons use immutable capture-time ownership. Current carried/worn views remain separate. Clear suppresses current-opening recapture. The shared bounded IO queue preserves deletion ordering across controller changes; process-crash deletion durability is not guaranteed.
 
-## Clan and validation
+## Clan
 
 Want to join OSRS geezers? Add **Th3keeza0** in game or [join our Discord](https://discord.gg/UAAe6QEGD). The plugin opens this only when you click the button.
 
-For v0.8.0, direct Java 11-target compilation, six invariant suites and synthetic previews pass against RuneLite 1.13.6. Gradle validation is recorded separately in VALIDATION.md. No in-game acceptance or FPS claim is made. See VALIDATION.md. Data licences and pinned sources are retained in THIRD_PARTY.md, SOURCES.md, third-party/ and data/manifest.json. The calculator is an original Java implementation of published equations, not a port of the GPL Wiki calculator code.
+## Sources and development
+
+Data licences and attribution are documented in [THIRD_PARTY.md](THIRD_PARTY.md) and [SOURCES.md](SOURCES.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and [VALIDATION.md](VALIDATION.md) for validation coverage.

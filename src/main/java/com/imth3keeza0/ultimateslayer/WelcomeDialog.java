@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Image;
 import java.awt.Window;
+import java.awt.image.BufferedImage;
 import java.awt.event.KeyEvent;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -16,6 +17,7 @@ import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 import javax.swing.WindowConstants;
 import net.runelite.client.util.LinkBrowser;
+import net.runelite.client.util.ImageUtil;
 
 /** Same optional introduction/clan-page style as AFK Timers. Browsing requires a click. */
 final class WelcomeDialog
@@ -34,13 +36,13 @@ final class WelcomeDialog
         Color background = new Color(35, 39, 46); JPanel panel = new JPanel(new BorderLayout(0, 16));
         panel.setBackground(background); panel.setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
         JPanel header = new JPanel(new BorderLayout(18, 0)); header.setOpaque(false);
-        java.net.URL resource = WelcomeDialog.class.getResource("branding/logo.png");
-        if (resource != null)
+        BufferedImage logo = ImageUtil.loadImageResource(WelcomeDialog.class, "branding/logo.png");
+        if (logo != null)
         {
-            ImageIcon source = new ImageIcon(resource); Image image = source.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+            Image image = logo.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
             header.add(new JLabel(new ImageIcon(image)), BorderLayout.WEST);
         }
-        header.add(new JLabel("<html><body style='color:#eeeeee;font-family:sans-serif'><h1 style='color:#57d6dc'>Ultimate Slayer</h1><p><b>Created by Th3keeza0</b></p><p>OSRS geezers · v0.7.0</p></body></html>"), BorderLayout.CENTER);
+        header.add(new JLabel("<html><body style='color:#eeeeee;font-family:sans-serif'><h1 style='color:#57d6dc'>Ultimate Slayer</h1><p><b>Created by Th3keeza0</b></p><p>OSRS geezers · v0.8.0</p></body></html>"), BorderLayout.CENTER);
         panel.add(header, BorderLayout.NORTH);
         JLabel text = new JLabel("<html><body style='width:370px;color:#eeeeee;font-family:sans-serif'>"
             + "<h3 style='color:#57d6dc'>Get started</h3><p><b>Open your bank once</b> to capture the equipment you own. Withdrawals and searches do not scan it again; close and reopen to refresh.</p><br>"
