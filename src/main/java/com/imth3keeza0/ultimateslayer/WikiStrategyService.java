@@ -40,7 +40,11 @@ public final class WikiStrategyService implements AutoCloseable
                 if (path.exists() && path.size() < 512_000)
                 {
                     try (Reader reader = path.openBufferedReader())
-                    { cached = WikiStrategy.fromJson(new JsonParser().parse(reader).getAsJsonObject(), "Cached public Wiki table."); }
+                    {
+                        JsonObject root = new JsonParser().parse(reader).getAsJsonObject();
+                        cached = WikiStrategy.fromJson(root, "Cached public Wiki table.");
+                        if (!root.has("inventory") && online) { cached = null; }
+                    }
                 }
             }
             catch (IOException | RuntimeException ignored) { /* A missing/corrupt cache does not block planning. */ }
@@ -125,3 +129,4 @@ public final class WikiStrategyService implements AutoCloseable
     }
     @Override public void close() { closed = true; worker.shutdownNow(); memory.clear(); }
 }
+

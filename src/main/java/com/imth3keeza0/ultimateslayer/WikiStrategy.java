@@ -35,10 +35,13 @@ public final class WikiStrategy
         public final String title, status;
         public final long fetchedAt;
         public final List<Method> methods;
+        public final List<String> inventory;
         public Profile(String title, long fetchedAt, List<Method> methods, String status)
-        { this.title = title; this.fetchedAt = fetchedAt; this.methods = List.copyOf(methods); this.status = status; }
+        { this(title, fetchedAt, methods, status, List.of()); }
+        public Profile(String title, long fetchedAt, List<Method> methods, String status, List<String> inventory)
+        { this.title = title; this.fetchedAt = fetchedAt; this.methods = List.copyOf(methods); this.status = status; this.inventory = List.copyOf(inventory); }
         public String url() { return "https://oldschool.runescape.wiki/w/" + java.net.URLEncoder.encode(title.replace(' ', '_'), StandardCharsets.UTF_8); }
-        public Profile withStatus(String next) { return new Profile(title, fetchedAt, methods, next); }
+        public Profile withStatus(String next) { return new Profile(title, fetchedAt, methods, next, inventory); }
     }
     static String normalize(String name)
     { return name.toLowerCase(Locale.ROOT).replace('\u2019', '\'').replace('\u00a0', ' ').replaceAll("\\s+", " ").trim(); }
@@ -64,10 +67,13 @@ public final class WikiStrategy
     public static Profile parse(String title, String html, long timestamp) throws IOException
     {
         List<Method> methods = new ArrayList<>();
+        LinkedHashSet<String> inventory = new LinkedHashSet<>();
         new ParserDelegator().parse(new StringReader(html), new HTMLEditorKit.ParserCallback()
         {
             int depth, cellIndex = -1, slot = -2;
             boolean caption, inCell, inRow;
+            boolean inventorySection, inHeading;
+            int listDepth;
             String method = "", recent = "", heading = "";
             StringBuilder text = new StringBuilder(), captionText = new StringBuilder();
             LinkedHashSet<String> links = new LinkedHashSet<>();
@@ -94,7 +100,13 @@ public final class WikiStrategy
                 }
                 if (depth == 0)
                 {
-                    if (tag == HTML.Tag.H3 || tag == HTML.Tag.H4) { heading = ""; }
+                    if (tag == HTML.Tag.H2 || tag == HTML.Tag.H3 || tag == HTML.Tag.H4) { heading = ""; inHeading = true; }
+                    if (tag == HTML.Tag.UL || tag == HTML.Tag.OL) { listDepth++; }
+                    if (inventorySection && listDepth > 0 && tag == HTML.Tag.A && inventory.size() < 40)
+                    {
+                        String item = attribute(a, HTML.Attribute.TITLE), href = attribute(a, HTML.Attribute.HREF);
+                        if (!item.isBlank() && !item.contains(":") && !href.contains("#") && !href.contains("redlink=1")) { inventory.add(item); }
+                    }
                     return;
                 }
                 if (depth != 1) { return; }
@@ -122,12 +134,18 @@ public final class WikiStrategy
             @Override public void handleText(char[] chars, int pos)
             {
                 String value = new String(chars);
-                if (depth == 0) { heading += value; recent = (recent + " " + value); if (recent.length() > 180) { recent = recent.substring(recent.length()-180); } }
+                if (depth == 0) { if (inHeading) { heading += value; } recent = (recent + " " + value); if (recent.length() > 180) { recent = recent.substring(recent.length()-180); } }
                 if (caption) { captionText.append(value); }
                 if (inCell && depth == 1) { text.append(value); }
             }
             @Override public void handleEndTag(HTML.Tag tag, int pos)
             {
+                if (depth == 0)
+                {
+                    if (tag == HTML.Tag.UL || tag == HTML.Tag.OL) { listDepth = Math.max(0,listDepth-1); }
+                    if (tag == HTML.Tag.H2 || tag == HTML.Tag.H3 || tag == HTML.Tag.H4)
+                    { inventorySection = normalize(heading).startsWith("inventory") || normalize(heading).startsWith("recommended inventory"); inHeading = false; }
+                }
                 if (tag == HTML.Tag.CAPTION && depth == 1)
                 { caption = false; String c = captionText.toString().trim(); if (normalize(c).contains("recommended equipment")) { method = c.replaceFirst("(?i).*recommended equipment(?: for)?\\s*", ""); } }
                 if ((tag == HTML.Tag.TD || tag == HTML.Tag.TH) && depth == 1 && inCell)
@@ -163,7 +181,7 @@ public final class WikiStrategy
             end = end < 0 ? Math.min(html.length(),start+12000) : Math.min(end+8,start+40000);
             System.out.println("WIKI_TABLE_DIAGNOSTIC: " + html.substring(start,end));
         }
-        return new Profile(title, timestamp, methods, methods.isEmpty() ? "No supported Wiki equipment table found." : "Live Wiki equipment table; review conditional notes on the source page.");
+        return new Profile(title, timestamp, methods, methods.isEmpty() ? "No supported Wiki equipment table found." : "Live Wiki equipment table; review conditional notes on the source page.", List.copyOf(inventory));
     }
     static JsonObject toJson(Profile profile)
     {
@@ -175,7 +193,7 @@ public final class WikiStrategy
             method.slots.forEach((slot, names) -> slots.add(slot.toString(), new Gson().toJsonTree(names)));
             row.add("slots", slots); row.add("specials", new Gson().toJsonTree(method.specials)); methods.add(row);
         }
-        root.add("methods", methods); return root;
+        root.add("methods", methods); root.add("inventory", new Gson().toJsonTree(profile.inventory)); return root;
     }
     static Profile fromJson(JsonObject root, String status)
     {
@@ -186,7 +204,8 @@ public final class WikiStrategy
             row.getAsJsonObject("slots").entrySet().forEach(e -> slots.put(Integer.parseInt(e.getKey()), strings(e.getValue().getAsJsonArray())));
             methods.add(new Method(row.get("name").getAsString(), slots, strings(row.getAsJsonArray("specials"))));
         }
-        return new Profile(root.get("title").getAsString(), root.get("fetchedAt").getAsLong(), methods, status);
+        return new Profile(root.get("title").getAsString(), root.get("fetchedAt").getAsLong(), methods, status,
+            root.has("inventory") ? strings(root.getAsJsonArray("inventory")) : List.of());
     }
     private static List<String> strings(JsonArray array)
     { List<String> result = new ArrayList<>(); for (JsonElement e : array) { result.add(e.getAsString()); } return result; }
@@ -198,3 +217,4 @@ public final class WikiStrategy
         catch (Exception ignored) { return null; }
     }
 }
+
