@@ -78,6 +78,7 @@ public final class WikiStrategy
             {
                 String n = normalize(value).replace('_',' ');
                 if (n.contains("special attack")) { slot = -1; return; }
+                if (n.equals("one-handed weapon") || n.equals("two-handed weapon") || n.equals("weapon slot")) { slot = 3; return; }
                 String[] names = {"head", "cape", "neck", "weapon", "body", "shield", "legs", "hands", "feet", "ring", "ammo"};
                 int[] ids = {0,1,2,3,4,5,7,9,10,12,13};
                 for (int i = 0; i < names.length; i++)
@@ -110,7 +111,14 @@ public final class WikiStrategy
                 }
             }
             @Override public void handleSimpleTag(HTML.Tag tag, MutableAttributeSet a, int pos)
-            { if (depth == 1 && inCell && cellIndex == 0 && tag == HTML.Tag.IMG) { identify(attribute(a, HTML.Attribute.ALT)); } }
+            {
+                if (depth == 1 && inCell && cellIndex == 0 && tag == HTML.Tag.IMG)
+                {
+                    identify(attribute(a, HTML.Attribute.ALT));
+                    String src = attribute(a, HTML.Attribute.SRC);
+                    if (src.contains("/")) { identify(src.substring(src.lastIndexOf('/')+1).replaceFirst("(?i)\\.png.*$", "").replace('_',' ')); }
+                }
+            }
             @Override public void handleText(char[] chars, int pos)
             {
                 String value = new String(chars);

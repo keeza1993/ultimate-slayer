@@ -22,6 +22,9 @@ public final class WikiGearChecks
         require(parsed.methods.get(0).slots.get(3).equals(List.of("Abyssal bludgeon", "Zombie axe")), "Icon and text links deduplicate without reordering");
         require(parsed.methods.get(0).specials.equals(List.of("Bandos godsword")), "Special weapons cannot leak into main-weapon row");
         require(parsed.methods.get(1).style.equals("Ranged"), "Style is inferred from the table caption");
+        String actualSlotMarkup = html.replace("Weapon slot", "One-handed weapon");
+        require(WikiStrategy.parse("Araxxor/Strategies",actualSlotMarkup,123).methods.size() == 2,
+            "Actual Wiki one-handed weapon slot label is recognized");
         require(WikiStrategy.parse("Unknown", "<table>" + row("Weapon slot", "Bandos godsword") + "</table>", 123).methods.isEmpty(), "Unlabelled tables fail closed");
         WikiStrategy.Profile restored = WikiStrategy.fromJson(WikiStrategy.toJson(parsed), "cache");
         require(restored.methods.get(0).slots.equals(parsed.methods.get(0).slots), "Public cache round trip preserves slots and order");
