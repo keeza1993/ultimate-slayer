@@ -124,6 +124,9 @@ public final class WikiStrategy
                 { caption = false; String c = captionText.toString().trim(); if (normalize(c).contains("recommended equipment")) { method = c.replaceFirst("(?i).*recommended equipment(?: for)?\\s*", ""); } }
                 if ((tag == HTML.Tag.TD || tag == HTML.Tag.TH) && depth == 1 && inCell)
                 {
+                    String cellText = text.toString().trim();
+                    if (normalize(cellText).contains("recommended equipment for"))
+                    { method = cellText.replaceFirst("(?is).*recommended equipment for\\s*", "").trim(); }
                     if (cellIndex == 0) { identify(text.toString()); }
                     else if (slot >= -1 && !links.isEmpty())
                     {
@@ -144,6 +147,14 @@ public final class WikiStrategy
                 }
             }
         }, true);
+        if (methods.isEmpty() && Boolean.getBoolean("ultimateSlayer.wikiDiagnostics"))
+        {
+            int marker = html.toLowerCase(Locale.ROOT).indexOf("recommended equipment");
+            int start = marker < 0 ? 0 : Math.max(0, html.lastIndexOf("<table",marker));
+            int end = html.indexOf("</table>",Math.max(start,marker));
+            end = end < 0 ? Math.min(html.length(),start+12000) : Math.min(end+8,start+40000);
+            System.out.println("WIKI_TABLE_DIAGNOSTIC: " + html.substring(start,end));
+        }
         return new Profile(title, timestamp, methods, methods.isEmpty() ? "No supported Wiki equipment table found." : "Live Wiki equipment table; review conditional notes on the source page.");
     }
     static JsonObject toJson(Profile profile)
