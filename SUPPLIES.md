@@ -23,7 +23,7 @@ Return choices include house tablets, supported loose-rune house casts and a cha
 
 Use the **UltimateSlayer-update** ZIP from the successful build's artifacts. Its top level contains `build.gradle`, `gradlew.bat`, `gradle/` and `src/` directly. It does not contain an extra `ultimate-slayer-main/` or version-number folder.
 
-Close the development RuneLite window. Extract **into your existing UltimateSlayer project folder**, accept **Replace files**, then run `gradlew.bat run` there. Confirm the sidebar says **0.10.0**. The archive contains tracked source only; it does not include local caches, bank snapshots, passwords, IDE state or build outputs. Plugin configuration and bank snapshots are stored separately from source. No local project folder is deleted by this update.
+Close the development RuneLite window. Extract **into your existing UltimateSlayer project folder**, accept **Replace files**, then run `gradlew.bat run` there. Confirm the sidebar says **0.10.1**. The archive contains tracked source only; it does not include local caches, bank snapshots, passwords, IDE state or build outputs. Plugin configuration and bank snapshots are stored separately from source. No local project folder is deleted by this update.
 
 ## Validation and sources
 

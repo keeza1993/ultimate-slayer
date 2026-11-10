@@ -54,7 +54,17 @@ public final class SupplyChecks
         require(enriched.stream().anyMatch(n->n.key.startsWith("wiki-")&&n.bank(boosts)==8),"Wiki-listed non-gear supplies match snapshot item metadata");
         SwingUtilities.invokeAndWait(()->{
             UltimateSlayerPanel panel=new UltimateSlayerPanel(new UltimateSlayerConfig(){},()->{});
-            try{panel.setAccountContext(CombatChecks.account(99,0));panel.update(live,Map.of());panel.setPlanningSnapshot(bank);panel.setOwnedGear(catalog);render(panel);}
+            try{
+                panel.setAccountContext(CombatChecks.account(99,0));panel.update(live,Map.of());panel.setPlanningSnapshot(bank);panel.setOwnedGear(catalog);
+                int compactHeight=panel.getPreferredSize().height;
+                require(compactHeight<500,"Default sidebar fits a short task summary and closed lists");
+                button(panel,"[+] Gear").doClick();
+                require(panel.getPreferredSize().height>compactHeight,"Gear expands when clicked");
+                panel.refreshAppearance();require(button(panel,"[-] Gear")!=null,"Refresh preserves the open list");
+                button(panel,"[-] Gear").doClick();
+                require(button(panel,"[+] Supplies")!=null && button(panel,"[+] Travel")!=null && button(panel,"[+] More options")!=null,"Supplies, travel and advanced options start collapsed");
+                render(panel);
+            }
             finally{panel.disposePanel();}
         });
         System.out.println("Task supplies, dose variants, bank/live separation, travel reservation, Wiki inventory and priority checks passed.");
@@ -68,4 +78,7 @@ public final class SupplyChecks
     private static void render(UltimateSlayerPanel panel)
     {try{panel.setSize(225,panel.getPreferredSize().height);layout(panel);java.awt.image.BufferedImage image=new java.awt.image.BufferedImage(225,panel.getHeight(),java.awt.image.BufferedImage.TYPE_INT_RGB);java.awt.Graphics2D g=image.createGraphics();panel.printAll(g);g.dispose();javax.imageio.ImageIO.write(image,"png",new java.io.File("build/supplies-preview.png"));}catch(java.io.IOException e){throw new IllegalStateException(e);}}
     private static void layout(java.awt.Container c){c.doLayout();for(java.awt.Component child:c.getComponents()){if(child instanceof java.awt.Container){layout((java.awt.Container)child);}}}
+    private static javax.swing.AbstractButton button(java.awt.Container c,String text)
+    {for(java.awt.Component child:c.getComponents()){if(child instanceof javax.swing.AbstractButton&&((javax.swing.AbstractButton)child).getText().equals(text)){return (javax.swing.AbstractButton)child;}if(child instanceof java.awt.Container){javax.swing.AbstractButton found=button((java.awt.Container)child,text);if(found!=null){return found;}}}return null;}
 }
+

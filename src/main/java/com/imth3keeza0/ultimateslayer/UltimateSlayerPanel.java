@@ -53,6 +53,7 @@ public final class UltimateSlayerPanel extends PluginPanel
     }
     private final Runnable refresh;
     private final Map<String, Boolean> expanded = new HashMap<>();
+    private final List<JComponent> blocks = new java.util.ArrayList<>();
     private SidebarState state = SidebarState.empty();
     private Map<Integer, ItemDisplay> items = new HashMap<>();
     private String preferredStyle = "Melee";
@@ -191,6 +192,7 @@ public final class UltimateSlayerPanel extends PluginPanel
     private void rebuild()
     {
         removeAll();
+        blocks.clear();
         JPanel header = row();
         JLabel title = new JLabel("ULTIMATE SLAYER");
         title.setForeground(GOLD);
@@ -206,7 +208,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         JButton info = new JButton("Info"); styleButton(info); info.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
         info.addActionListener(e -> infoAction.run()); header.add(info);
         addBlock(header);
-        addBlock(label("Version 0.10.0 - Information only", MUTED));
+        addBlock(label("Version 0.10.1", MUTED));
 
         JPanel context = card("TASK / LOCATION");
         JComboBox<String> preview = new JComboBox<>(TaskReferenceData.tasks());
@@ -313,7 +315,8 @@ public final class UltimateSlayerPanel extends PluginPanel
             if (ownedMode && owned == null) { gear.add(label("Open your bank to load owned options. Bank snapshots must be enabled.", GOLD)); }
             if (draft != null)
             {
-                gear.add(label(draft.requirement + (draft.protectionMissing ? " Required slot unfilled - see Required items." : ""), draft.protectionMissing ? new Color(255, 145, 125) : GOLD));
+                JLabel status=label(draft.protectionMissing ? "Required item missing - check Required items." : optimizedDraft!=null ? "Best found modeled setup" : "Owned choices - check marked items.", draft.protectionMissing ? new Color(255, 145, 125) : MUTED);
+                status.setToolTipText(draft.requirement); gear.add(status);
             }
             JPanel grid = new JPanel(new GridLayout(5, 3, 4, 4));
             grid.setOpaque(false);
@@ -352,7 +355,9 @@ public final class UltimateSlayerPanel extends PluginPanel
                 if (alternatives != null) {
                     for (int rank = 0; rank < alternatives.size(); rank++) {
                         OwnedGearPlanner.Gear option = alternatives.get(rank);
-                        gear.add(label((rank + 1) + ". " + option.describe(selectedStyle()) + (draft.unverified.containsKey(option.id) ? " - CHECK: " + draft.unverified.get(option.id) : ""), BankGearOverlay.rankColor(rank + 1)));
+                        JLabel optionLabel=label((rank + 1) + ". " + option.name + (draft.unverified.containsKey(option.id) ? " [check]" : ""), BankGearOverlay.rankColor(rank + 1));
+                        optionLabel.setToolTipText(option.describe(selectedStyle()) + (draft.unverified.containsKey(option.id) ? " - " + draft.unverified.get(option.id) : ""));
+                        gear.add(optionLabel);
                     }
                 }
                 else { gear.add(label("No compatible ranked option observed for this slot.", MUTED)); }
@@ -418,6 +423,7 @@ public final class UltimateSlayerPanel extends PluginPanel
             addBlock(status);
         }
         publishRanks();
+        layoutSections();
         revalidate();
         repaint();
     }
@@ -788,7 +794,7 @@ public final class UltimateSlayerPanel extends PluginPanel
     {
         boolean open = expanded.getOrDefault(title, false);
         JPanel section = card(null);
-        JButton toggle = new JButton((open ? "? " : "? ") + title);
+        JButton toggle = new JButton((open ? "[-] " : "[+] ") + title);
         styleButton(toggle);
         toggle.setHorizontalAlignment(SwingConstants.LEFT);
         toggle.setAlignmentX(LEFT_ALIGNMENT);
@@ -807,7 +813,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         tile.setBorder(BorderFactory.createLineBorder(config.highContrast() ? MUTED : new Color(65, 69, 76)));
         ItemDisplay display = items.get(id);
         if (display == null && owned != null) { display = owned.icons.get(id); }
-        JLabel icon = new JLabel(display == null ? "�" : "", SwingConstants.CENTER);
+        JLabel icon = new JLabel("", SwingConstants.CENTER);
         icon.setForeground(MUTED);
         if (display != null) { icon.setIcon(display.icon); }
         tile.add(icon, BorderLayout.CENTER);
@@ -837,6 +843,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(config.highContrast() ? MUTED : new Color(58, 61, 67)), BorderFactory.createEmptyBorder(8, 6, 8, 6)));
         if (title != null)
         {
+            panel.putClientProperty("sectionTitle",title);
             panel.add(label(title, GOLD));
             panel.add(Box.createVerticalStrut(5));
         }
@@ -883,10 +890,75 @@ public final class UltimateSlayerPanel extends PluginPanel
 
     private void addBlock(JComponent component)
     {
+        blocks.add(component);
+    }
+
+    private void appendBlock(JComponent component)
+    {
         component.setAlignmentX(LEFT_ALIGNMENT);
         component.setMaximumSize(new Dimension(Integer.MAX_VALUE, component.getPreferredSize().height));
         add(component);
         add(Box.createVerticalStrut(8));
+    }
+
+    /** Keep normal use to one task summary and three short expandable lists. */
+    private void layoutSections()
+    {
+        List<JComponent> remaining=new java.util.ArrayList<>(blocks);
+        for(int i=0;i<Math.min(2,blocks.size());i++){appendBlock(blocks.get(i));remaining.remove(blocks.get(i));}
+        for(String title:List.of("YOUR TASK","EQUIPMENT","TRIP CHECKLIST","TRAVEL & LOCATIONS"))
+        {
+            for(JComponent block:blocks)
+            {
+                if(title.equals(block.getClientProperty("sectionTitle")))
+                {appendBlock(section(block,title.equals("YOUR TASK")));remaining.remove(block);}
+            }
+        }
+        if(!remaining.isEmpty())
+        {
+            JPanel advanced=new JPanel();advanced.setOpaque(false);advanced.setLayout(new BoxLayout(advanced,BoxLayout.Y_AXIS));
+            for(JComponent block:remaining)
+            {
+                JComponent wrapped=block.getClientProperty("sectionTitle")==null?block:section(block,false);
+                wrapped.setAlignmentX(LEFT_ALIGNMENT);advanced.add(wrapped);advanced.add(Box.createVerticalStrut(6));
+            }
+            appendBlock(fold("More options","section:advanced",advanced,false));
+        }
+    }
+    private JComponent section(JComponent content,boolean defaultOpen)
+    {
+        String original=(String)content.getClientProperty("sectionTitle");
+        // The first two children are the old heading and its spacer.
+        if(content.getComponentCount()>=2){content.remove(0);content.remove(0);}
+        String title;
+        switch(original)
+        {
+            case "YOUR TASK":title="Your task";break;
+            case "EQUIPMENT":title="Gear";break;
+            case "TRIP CHECKLIST":title="Supplies";break;
+            case "TRAVEL & LOCATIONS":title="Travel";break;
+            case "TASK / LOCATION":title="Task / location";break;
+            case "MONSTER REFERENCE":title="Monster details";break;
+            case "WIKI STRATEGY - OWNED GEAR":title="Wiki strategy";break;
+            case "REQUIRED ITEMS":title="Required items";break;
+            case "COMBAT COMPARISON":title="DPS comparison";break;
+            case "INVENTORY":title="Inventory";break;
+            case "BANK DATA":title="Bank snapshot";break;
+            default:title=original;
+        }
+        return fold(title,"section:"+original,content,defaultOpen);
+    }
+    private JComponent fold(String title,String key,JComponent content,boolean defaultOpen)
+    {
+        boolean open=expanded.getOrDefault(key,defaultOpen);
+        JPanel wrapper=new JPanel();wrapper.setLayout(new BoxLayout(wrapper,BoxLayout.Y_AXIS));wrapper.setBackground(CARD);
+        wrapper.setBorder(BorderFactory.createLineBorder(new Color(65,69,76)));
+        JButton toggle=new JButton((open?"[-] ":"[+] ")+title);styleButton(toggle);
+        toggle.setFont(new Font(Font.SANS_SERIF,Font.BOLD,11));toggle.setHorizontalAlignment(SwingConstants.LEFT);
+        toggle.setMaximumSize(new Dimension(Integer.MAX_VALUE,32));toggle.setPreferredSize(new Dimension(188,32));
+        toggle.addActionListener(e->{expanded.put(key,!open);rebuild();});wrapper.add(toggle);
+        content.setAlignmentX(LEFT_ALIGNMENT);content.setVisible(open);wrapper.add(content);
+        return wrapper;
     }
 }
 
