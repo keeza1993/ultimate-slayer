@@ -93,6 +93,7 @@ public final class UltimateSlayerPlugin extends Plugin
             panel = new UltimateSlayerPanel(config, this::manualRefresh);
             panel.setRankListener(bankGearOverlay::setRanks);
             panel.setWikiService(wikiService);
+            panel.setSupplyPriorityAction((key, priority) -> configManager.setConfiguration(UltimateSlayerConfig.GROUP, key, priority));
             panel.setInfoAction(() -> showWelcome(true));
             panel.setBankStatus(bankMessage, this::clearBank);
             panel.setOwnedGear(ownedCatalog);
@@ -143,8 +144,8 @@ public final class UltimateSlayerPlugin extends Plugin
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event)
     {
-        if (((config.equipmentEnabled() || config.requiredItemsEnabled()) && event.getContainerId() == InventoryID.EQUIPMENT.getId())
-            || ((config.inventoryEnabled() || config.requiredItemsEnabled()) && event.getContainerId() == InventoryID.INVENTORY.getId()))
+        if (((config.equipmentEnabled() || config.requiredItemsEnabled() || config.suppliesEnabled()) && event.getContainerId() == InventoryID.EQUIPMENT.getId())
+            || ((config.inventoryEnabled() || config.requiredItemsEnabled() || config.suppliesEnabled()) && event.getContainerId() == InventoryID.INVENTORY.getId()))
         {
             requestRefresh();
         }
@@ -158,7 +159,7 @@ public final class UltimateSlayerPlugin extends Plugin
         Integer previousBoost = observedBoosts.put(event.getSkill(), event.getBoostedLevel());
         boolean damageSkill = event.getSkill() == Skill.ATTACK || event.getSkill() == Skill.STRENGTH || event.getSkill() == Skill.RANGED || event.getSkill() == Skill.MAGIC;
         if (previous != null && previous == event.getLevel() && (!damageSkill || previousBoost != null && previousBoost == event.getBoostedLevel())) { return; } // XP-only changes do not rebuild the sidebar.
-        if (config.equipmentEnabled() || config.requiredItemsEnabled() || config.spellsEnabled()) { requestRefresh(); }
+        if (config.equipmentEnabled() || config.requiredItemsEnabled() || config.spellsEnabled() || config.suppliesEnabled()) { requestRefresh(); }
     }
 
     @Subscribe
@@ -166,12 +167,12 @@ public final class UltimateSlayerPlugin extends Plugin
     {
         int varp = event.getVarpId();
         int varbit = event.getVarbitId();
-        if ((config.equipmentEnabled() || config.requiredItemsEnabled() || config.travelEnabled() || config.spellsEnabled()) &&
+        if ((config.equipmentEnabled() || config.requiredItemsEnabled() || config.travelEnabled() || config.spellsEnabled() || config.suppliesEnabled()) &&
             (varp == VarPlayerID.DRAGONQUEST || varp == VarPlayerID.FEVER_QUEST || varp == VarPlayerID.PRIESTPERIL || varp == VarPlayerID.ELEMENTAL_WORKSHOP_BITS
             || varp == VarPlayerID.ELEMENTAL_QUEST_2_BITS || varp == VarPlayerID.QUEST_VIKINGEXILE
             || varbit == VarbitID.SPELLBOOK || varbit == VarbitID.FAIRY2_QUEENCURE_QUEST || varbit == VarbitID.ELEMENTAL_QUEST_2_MAIN)) { requestRefresh(); }
         if (config.requiredItemsEnabled() && varbit == VarbitID.KOUREND_DIARY_ELITE_COMPLETE) { requestRefresh(); }
-        if (config.taskEnabled() && (varp == VarPlayerID.SLAYER_COUNT
+        if ((config.taskEnabled() || config.suppliesEnabled()) && (varp == VarPlayerID.SLAYER_COUNT
             || varp == VarPlayerID.SLAYER_TARGET || varp == VarPlayerID.SLAYER_AREA
             || varp == VarPlayerID.SLAYER_COUNT_ORIGINAL || varbit == VarbitID.SLAYER_TARGET_BOSSID
             || varbit == VarbitID.SLAYER_MODIFIER_ID || varbit == VarbitID.SLAYER_MODIFIER_VALUE
@@ -231,12 +232,12 @@ public final class UltimateSlayerPlugin extends Plugin
         Set<Integer> ids = new HashSet<>(snapshot.bank.keySet());
         ids.addAll(snapshot.inventory.keySet());
         ids.addAll(snapshot.equipment.keySet());
-        buildCatalogBatch(snapshot, ids.iterator(), token, new ArrayList<>(), new HashMap<>(), new HashSet<>(), new int[1]);
+        buildCatalogBatch(snapshot, ids.iterator(), token, new ArrayList<>(), new HashMap<>(), new HashSet<>(), new int[1], new HashMap<>());
     }
 
     private void buildCatalogBatch(BankSnapshot snapshot, Iterator<Integer> ids, long token,
                                    List<OwnedGearPlanner.Gear> gear, Map<Integer, UltimateSlayerPanel.ItemDisplay> icons,
-                                   Set<Integer> seen, int[] unknown)
+                                   Set<Integer> seen, int[] unknown, Map<Integer, String> names)
     {
         clientThread.invokeLater(() -> {
             if (!active || token != catalogRevision || !config.ownedGearEnabled() || !config.equipmentEnabled()) { return; }
@@ -253,6 +254,7 @@ public final class UltimateSlayerPlugin extends Plugin
                     definition = itemManager.getItemComposition(id);
                 }
                 if (!seen.add(id)) { continue; }
+                names.put(id, definition.getName());
                 ItemStats stats = itemManager.getItemStats(id);
                 if (stats == null) { stats = itemManager.getItemStats(ItemVariationMapping.map(id)); }
                 if (stats == null) { unknown[0]++; continue; }
@@ -265,10 +267,10 @@ public final class UltimateSlayerPlugin extends Plugin
                 image.onLoaded(() -> SwingUtilities.invokeLater(() -> { if (token == catalogRevision && panel != null) { panel.repaint(); } }));
                 icons.put(id, new UltimateSlayerPanel.ItemDisplay(definition.getName(), new ImageIcon(image)));
             }
-            if (ids.hasNext()) { buildCatalogBatch(snapshot, ids, token, gear, icons, seen, unknown); }
+            if (ids.hasNext()) { buildCatalogBatch(snapshot, ids, token, gear, icons, seen, unknown, names); }
             else
             {
-                OwnedGearCatalog catalog = new OwnedGearCatalog(snapshot.capturedAt, gear, icons, unknown[0], seen);
+                OwnedGearCatalog catalog = new OwnedGearCatalog(snapshot.capturedAt, gear, icons, unknown[0], seen, names);
                 ownedCatalog = catalog;
                 SwingUtilities.invokeLater(() -> { if (active && token == catalogRevision && panel != null) { panel.setOwnedGear(catalog); } });
             }
@@ -351,13 +353,13 @@ public final class UltimateSlayerPlugin extends Plugin
         Map<Integer, UltimateSlayerPanel.ItemDisplay> display = new HashMap<>();
         if (loggedIn)
         {
-            if (config.equipmentEnabled() || config.requiredItemsEnabled()) { copy(client.getItemContainer(InventoryID.EQUIPMENT), equipment, null, display); }
-            if (config.inventoryEnabled() || config.requiredItemsEnabled()) { copy(client.getItemContainer(InventoryID.INVENTORY), inventory, quantities, display); }
+            if (config.equipmentEnabled() || config.requiredItemsEnabled() || config.suppliesEnabled()) { copy(client.getItemContainer(InventoryID.EQUIPMENT), equipment, null, display); }
+            if (config.inventoryEnabled() || config.requiredItemsEnabled() || config.suppliesEnabled()) { copy(client.getItemContainer(InventoryID.INVENTORY), inventory, quantities, display); }
         }
         String task = null;
         String location = null;
         int remaining = 0;
-        if (loggedIn && config.taskEnabled())
+        if (loggedIn && (config.taskEnabled() || config.suppliesEnabled()))
         {
             remaining = Math.max(0, client.getVarpValue(VarPlayerID.SLAYER_COUNT));
             if (remaining == 0)
@@ -384,14 +386,14 @@ public final class UltimateSlayerPlugin extends Plugin
         Map<Skill, Integer> levels = new java.util.EnumMap<>(Skill.class);
         Map<Skill, Integer> boosts = new java.util.EnumMap<>(Skill.class);
         Map<Quest, Boolean> quests = new java.util.EnumMap<>(Quest.class);
-        if (loggedIn && (config.equipmentEnabled() || config.requiredItemsEnabled() || config.travelEnabled() || config.spellsEnabled()))
+        if (loggedIn && (config.equipmentEnabled() || config.requiredItemsEnabled() || config.travelEnabled() || config.spellsEnabled() || config.suppliesEnabled()))
         {
             for (Skill skill : Skill.values())
             { if (skill != Skill.OVERALL) { levels.put(skill, client.getRealSkillLevel(skill)); if (skill == Skill.ATTACK || skill == Skill.STRENGTH || skill == Skill.RANGED || skill == Skill.MAGIC) { boosts.put(skill, client.getBoostedSkillLevel(skill)); } } }
             for (Quest quest : ProgressionChecks.QUESTS)
             { QuestState status = quest.getState(client); if (status != null) { quests.put(quest, status == QuestState.FINISHED); } }
         }
-        final AccountContext account = new AccountContext(levels, quests, loggedIn && config.spellsEnabled() ? client.getVarbitValue(VarbitID.SPELLBOOK) : -1, boosts);
+        final AccountContext account = new AccountContext(levels, quests, loggedIn && (config.spellsEnabled() || config.suppliesEnabled()) ? client.getVarbitValue(VarbitID.SPELLBOOK) : -1, boosts);
         final List<OwnedGearPlanner.Gear> worn = new ArrayList<>();
         if (loggedIn && config.equipmentEnabled() && config.combatEnabled())
         {
@@ -494,4 +496,5 @@ public final class UltimateSlayerPlugin extends Plugin
         return image;
     }
 }
+
 

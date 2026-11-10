@@ -7,6 +7,26 @@ import net.runelite.client.config.ConfigItem;
 @ConfigGroup(UltimateSlayerConfig.GROUP)
 public interface UltimateSlayerConfig extends Config
 {
+    @ConfigItem(keyName="protectionPriority",name="Protection priority",description="Checklist order; does not remove protection requirements",position=18)
+    default SupplyPlanner.Priority protectionPriority(){return SupplyPlanner.Priority.HIGH;}
+    @ConfigItem(keyName="prayerPriority",name="Prayer supply priority",description="Priority of prayer potions and super restores",position=19)
+    default SupplyPlanner.Priority prayerPriority(){return SupplyPlanner.Priority.HIGH;}
+    @ConfigItem(keyName="foodPriority",name="Food priority",description="Priority of healing supplies",position=20)
+    default SupplyPlanner.Priority foodPriority(){return SupplyPlanner.Priority.HIGH;}
+    @ConfigItem(keyName="outboundPriority",name="Outbound travel priority",description="Priority of the journey to the task",position=21)
+    default SupplyPlanner.Priority outboundPriority(){return SupplyPlanner.Priority.HIGH;}
+    @ConfigItem(keyName="returnPriority",name="Return teleport priority",description="Priority of the journey back",position=22)
+    default SupplyPlanner.Priority returnPriority(){return SupplyPlanner.Priority.HIGH;}
+    @ConfigItem(keyName="toolsPriority",name="Task tools priority",description="Priority of task tools; does not remove required tools",position=23)
+    default SupplyPlanner.Priority toolsPriority(){return SupplyPlanner.Priority.HIGH;}
+    @ConfigItem(keyName="extraSupplyPriority",name="Other Wiki supplies priority",description="Priority of extra observed inventory items from the selected Wiki strategy",position=24)
+    default SupplyPlanner.Priority extraSupplyPriority(){return SupplyPlanner.Priority.NORMAL;}
+    @ConfigItem(keyName="preferHouseTravel",name="Prefer POH travel",description="Prefer house return teleports and confirmed POH fairy-ring routes",position=25)
+    default boolean preferHouseTravel(){return true;}
+    @ConfigItem(keyName="houseFairyRingConfirmed",name="POH fairy ring confirmed",description="You confirm your house has a usable fairy ring. The plugin does not scan POH furniture or access",position=26)
+    default boolean houseFairyRingConfirmed(){return false;}
+    @ConfigItem(keyName="stafflessFairyRingsConfirmed",name="Staffless fairy rings confirmed",description="You confirm the Lumbridge elite diary staffless reward; removes only the conditional staff reminder",position=27)
+    default boolean stafflessFairyRingsConfirmed(){return false;}
     @ConfigItem(keyName = "wikiGearEnabled", name = "Wiki strategy gear", description = "Use monster-specific Wiki equipment tables and your owned items; incomplete tables are labelled", position = 15)
     default boolean wikiGearEnabled() { return true; }
 
@@ -16,7 +36,7 @@ public interface UltimateSlayerConfig extends Config
     @ConfigItem(keyName = "bankRanksEnabled", name = "Bank gear ranks", description = "Number and colour your owned Wiki-ranked choices: 1 green, 2 yellow, 3 red. Requires an active task or explicit preview", position = 17)
     default boolean bankRanksEnabled() { return true; }
 
-    @ConfigItem(keyName = "suppliesEnabled", name = "Supply planning", description = "Show cached supply counts and finishing-item estimates; never rescans the bank", position = 10)
+    @ConfigItem(keyName = "suppliesEnabled", name = "Supply planning", description = "Task trip checklist with priorities, live carried counts and capture-time bank stock; never rescans the bank", position = 10)
     default boolean suppliesEnabled() { return true; }
 
     @ConfigItem(keyName = "monstersEnabled", name = "Monster reference", description = "Browse bundled monster variants and combat stats; no network requests", position = 11)
@@ -62,4 +82,5 @@ public interface UltimateSlayerConfig extends Config
     @ConfigItem(keyName = "travelEnabled", name = "Travel section", description = "Show reference travel routes, access notes and location links", position = 9)
     default boolean travelEnabled() { return true; }
 }
+
 

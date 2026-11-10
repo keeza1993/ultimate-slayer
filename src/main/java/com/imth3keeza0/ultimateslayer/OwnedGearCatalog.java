@@ -13,6 +13,7 @@ public final class OwnedGearCatalog
     public final Map<Integer, UltimateSlayerPanel.ItemDisplay> icons;
     public final int unknownItems;
     public final java.util.Set<Integer> itemIds;
+    public final Map<Integer, String> itemNames;
     public OwnedGearCatalog(long capturedAt, List<OwnedGearPlanner.Gear> gear,
                             Map<Integer, UltimateSlayerPanel.ItemDisplay> icons, int unknownItems)
     {
@@ -21,11 +22,19 @@ public final class OwnedGearCatalog
 
     public OwnedGearCatalog(long capturedAt, List<OwnedGearPlanner.Gear> gear,
                             Map<Integer, UltimateSlayerPanel.ItemDisplay> icons, int unknownItems, java.util.Set<Integer> itemIds)
+    { this(capturedAt, gear, icons, unknownItems, itemIds, Map.of()); }
+
+    public OwnedGearCatalog(long capturedAt, List<OwnedGearPlanner.Gear> gear,
+                            Map<Integer, UltimateSlayerPanel.ItemDisplay> icons, int unknownItems, java.util.Set<Integer> itemIds,
+                            Map<Integer, String> itemNames)
     {
         this.capturedAt = capturedAt;
         this.gear = Collections.unmodifiableList(new ArrayList<>(gear));
         this.icons = Collections.unmodifiableMap(new HashMap<>(icons));
         this.unknownItems = unknownItems;
         this.itemIds = java.util.Set.copyOf(itemIds);
+        this.itemNames = Map.copyOf(itemNames);
     }
 }
+
+

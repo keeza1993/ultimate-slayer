@@ -31,6 +31,9 @@ public final class UltimateSlayerPanel extends PluginPanel
     private static final Color MUTED = new Color(185, 190, 198);
     private static final Color GOLD = new Color(235, 189, 91);
     private final UltimateSlayerConfig config;
+    private java.util.function.BiConsumer<String,SupplyPlanner.Priority> supplyPriorityAction=(key,priority)->{};
+    private boolean missingSuppliesFirst;
+    public void setSupplyPriorityAction(java.util.function.BiConsumer<String,SupplyPlanner.Priority> action){supplyPriorityAction=action;}
     private WikiStrategyService wikiService;
     private WikiStrategy.Profile wikiProfile;
     private WikiStrategy.Method wikiMethod;
@@ -203,7 +206,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         JButton info = new JButton("Info"); styleButton(info); info.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
         info.addActionListener(e -> infoAction.run()); header.add(info);
         addBlock(header);
-        addBlock(label("Version 0.9.0 - Information only", MUTED));
+        addBlock(label("Version 0.10.0 - Information only", MUTED));
 
         JPanel context = card("TASK / LOCATION");
         JComboBox<String> preview = new JComboBox<>(TaskReferenceData.tasks());
@@ -256,6 +259,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         if (config.monstersEnabled()) { addMonsterReference(); }
         requestWiki(false);
         if (config.wikiGearEnabled()) { addWikiStrategy(); }
+        if (config.suppliesEnabled()) { addSupplies(); }
         if (config.requiredItemsEnabled()) { addRequiredItems(); }
         if (config.spellsEnabled() && "Magic".equals(preferredStyle)) { addSpellPlan(); }
         if (config.combatEnabled()) { addCombatComparison(); }
@@ -388,7 +392,6 @@ public final class UltimateSlayerPanel extends PluginPanel
         if (config.equipmentEnabled() && config.ownedGearEnabled() && showOwned && contextDraft() != null && !contextDraft().omitted.isEmpty())
         { disclosure("Why gear was omitted", String.join("\n", contextDraft().omitted) + "\nFirst 12 blocked items shown. CHECK items remain visible; verify them before use."); }
         if (config.travelEnabled()) { addTravel(); }
-        if (config.suppliesEnabled()) { addSupplies(); }
 
         if (config.detailsEnabled())
         {
@@ -730,8 +733,55 @@ public final class UltimateSlayerPanel extends PluginPanel
 
     private void addSupplies()
     {
-        String text = String.join("\n", TripPlanning.supplies(contextTask(), previewTask == null ? state.remaining : 0, preferredStyle, planningSnapshot));
-        disclosure("SUPPLIES - snapshot planning", text);
+        JPanel section=card("TRIP CHECKLIST");
+        if(!state.loggedIn || previewTask==null && state.remaining<=0)
+        {section.add(label("Choose a task or preview to plan supplies.",MUTED));addBlock(section);return;}
+        section.add(label("Carried/worn counts are live. Bank counts are from the last opening; they can be stale. Availability is not a calculated trip quantity.",MUTED));
+        JComboBox<String> sort=new JComboBox<>(new String[]{"Priority first","Unpacked first"});
+        sort.setSelectedIndex(missingSuppliesFirst?1:0);sort.setMaximumSize(new Dimension(188,28));sort.setAlignmentX(LEFT_ALIGNMENT);
+        sort.addActionListener(e->{missingSuppliesFirst=sort.getSelectedIndex()==1;rebuild();});section.add(sort);
+        boolean priorities=expanded.getOrDefault("supply-priorities",false);
+        JButton settings=new JButton(priorities?"Hide priorities":"Set supply priorities");styleButton(settings);
+        settings.addActionListener(e->{expanded.put("supply-priorities",!priorities);rebuild();});section.add(settings);
+        if(priorities)
+        {
+            for(SupplyPlanner.Category category:SupplyPlanner.Category.values())
+            {
+                section.add(label(category.label,MUTED));
+                JComboBox<SupplyPlanner.Priority> priority=new JComboBox<>(SupplyPlanner.Priority.values());
+                priority.setSelectedItem(SupplyPlanner.priority(config,category));priority.setMaximumSize(new Dimension(188,28));priority.setAlignmentX(LEFT_ALIGNMENT);
+                priority.addActionListener(e->{supplyPriorityAction.accept(category.key,(SupplyPlanner.Priority)priority.getSelectedItem());});section.add(priority);
+            }
+        }
+        SidebarState planningState=state;
+        if(previewTask!=null){int[] worn=new int[14],carried=new int[28],quantities=new int[28];for(int i=0;i<14;i++){worn[i]=state.equipmentAt(i);}for(int i=0;i<28;i++){carried[i]=state.inventoryAt(i);quantities[i]=state.quantityAt(i);}planningState=new SidebarState(previewTask,null,0,state.loggedIn,worn,carried,quantities);}
+        Map<Integer,String> supplyNames=new HashMap<>(owned==null?Map.of():owned.itemNames);
+        items.forEach((id,display)->supplyNames.put(id,display.name));
+        OwnedGearCatalog supplyMetadata=new OwnedGearCatalog(owned==null?System.currentTimeMillis():owned.capturedAt,List.of(),Map.of(),0,supplyNames.keySet(),supplyNames);
+        List<SupplyPlanner.Need> needs=SupplyPlanner.plan(contextTask(),monsterChoice==null?contextTask():monsterChoice.name,
+            contextLocation(),exemption,preferredStyle,planningState,planningSnapshot,supplyMetadata,wikiProfile,account,
+            config.preferHouseTravel(),config.houseFairyRingConfirmed(),config.stafflessFairyRingsConfirmed());
+        for(SupplyPlanner.Need need:SupplyPlanner.sorted(needs,config,planningState,planningSnapshot,missingSuppliesFirst))
+        {
+            section.add(Box.createVerticalStrut(7));section.add(label(SupplyPlanner.priority(config,need.category)+" � "+need.title,GOLD));
+            section.add(label(need.summary(planningState,planningSnapshot),need.packed(planningState)?BankGearOverlay.rankColor(1):MUTED));
+            boolean details=expanded.getOrDefault("supply:"+need.key,false);
+            JButton show=new JButton(details?"Hide details":"Choices / why");styleButton(show);show.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,10));
+            show.addActionListener(e->{expanded.put("supply:"+need.key,!details);rebuild();});section.add(show);
+            if(details)
+            {
+                section.add(label(need.note,MUTED));
+                for(SupplyPlanner.Choice choice:need.choices){section.add(label(choice.name+": now "+choice.carried(planningState)+"; bank at capture "+(planningSnapshot==null?"unknown":choice.bank(planningSnapshot)),MUTED));}
+            }
+        }
+        if(wikiProfile!=null&&!wikiProfile.inventory.isEmpty())
+        {
+            boolean references=expanded.getOrDefault("wiki-inventory",false);
+            JButton show=new JButton(references?"Hide Wiki inventory list":"Show Wiki inventory list");styleButton(show);
+            show.addActionListener(e->{expanded.put("wiki-inventory",!references);rebuild();});section.add(show);
+            if(references){section.add(label("Wiki inventory references (check source conditions): "+String.join(", ",wikiProfile.inventory),MUTED));}
+        }
+        addBlock(section);
     }
 
     private void disclosure(String title, String text)
@@ -839,4 +889,5 @@ public final class UltimateSlayerPanel extends PluginPanel
         add(Box.createVerticalStrut(8));
     }
 }
+
 

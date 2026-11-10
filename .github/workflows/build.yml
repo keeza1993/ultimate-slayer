@@ -22,3 +22,17 @@ jobs:
           path: |
             build/libs/*.jar
             build/*preview.png
+      - name: Prepare flat source update
+        run: |
+          mkdir -p build/update-package
+          git archive HEAD | tar -x -C build/update-package
+          test -f build/update-package/build.gradle
+          test -f build/update-package/gradlew.bat
+          test -f build/update-package/src/main/java/com/imth3keeza0/ultimateslayer/SupplyPlanner.java
+          test ! -d build/update-package/ultimate-slayer-main
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UltimateSlayer-update
+          path: build/update-package/
+          include-hidden-files: true
+

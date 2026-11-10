@@ -22,6 +22,9 @@ public final class WikiLiveChecks
             found = true;
         }
         if (!found) { throw new AssertionError("Live Araxxor melee method missing"); }
+        if (live.inventory.stream().noneMatch(n -> WikiStrategy.normalize(n).contains("anti-venom")))
+        { throw new AssertionError("Actual Wiki inventory venom supplies were not captured"); }
         System.out.println("LIVE_WIKI_PARSED: " + live.methods.size() + " actual equipment tables; Araxxor main and special rows validated.");
     }
 }
+
