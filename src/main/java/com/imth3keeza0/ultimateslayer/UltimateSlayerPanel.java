@@ -31,6 +31,23 @@ public final class UltimateSlayerPanel extends PluginPanel
     private static final Color MUTED = new Color(185, 190, 198);
     private static final Color GOLD = new Color(235, 189, 91);
     private final UltimateSlayerConfig config;
+    private WikiStrategyService wikiService;
+    private WikiStrategy.Profile wikiProfile;
+    private WikiStrategy.Method wikiMethod;
+    private String wikiKey = "";
+    private long wikiRevision;
+    private java.util.function.Consumer<Map<Integer, Integer>> rankListener = ranks -> {};
+    public void setRankListener(java.util.function.Consumer<Map<Integer, Integer>> listener) { rankListener = listener; }
+    public void setWikiService(WikiStrategyService service) { wikiService = service; rebuild(); }
+    private String strategyTarget()
+    {
+        if (monsterChoice != null) { return monsterChoice.name; }
+        String task = contextTask(); if (task == null) { return null; }
+        for (ReferenceCatalog.Monster monster : ReferenceCatalog.get().forTask(task))
+        { if (WikiStrategyService.sameFamily(monster.name, task)) { return monster.name; } }
+        for (String name : ReferenceCatalog.get().tasks.keySet()) { if (name.equalsIgnoreCase(task)) { return name; } }
+        return task;
+    }
     private final Runnable refresh;
     private final Map<String, Boolean> expanded = new HashMap<>();
     private SidebarState state = SidebarState.empty();
@@ -66,10 +83,11 @@ public final class UltimateSlayerPanel extends PluginPanel
     private String combatStatus = "Choose a monster variant, then compare your owned gear.";
     private List<OwnedGearPlanner.Gear> wornGear = List.of();
     public void setWornGear(List<OwnedGearPlanner.Gear> gear) { wornGear = List.copyOf(gear); }
-    public void disposePanel() { disposed = true; invalidateCombat(); combatWorker.shutdownNow(); }
+    public void disposePanel() { disposed = true; ++wikiRevision; rankListener.accept(Map.of()); invalidateCombat(); combatWorker.shutdownNow(); }
     public void combatSettingsChanged() { if (!config.combatEnabled()) { invalidateCombat(); } rebuild(); }
     private void invalidateCombat()
     {
+        draftCache.clear();
         searchRevision++; if (searchJob != null) { searchJob.cancel(true); searchJob = null; combatWorker.purge(); }
         if (combatResults != null || optimizedDraft != null) { combatStatus = "Inputs changed; run the comparison again."; }
         combatResults = null; optimizedDraft = null; displayedSetup = null;
@@ -85,8 +103,10 @@ public final class UltimateSlayerPanel extends PluginPanel
     {
         onTaskAssumed = false; chargedAssumed = false; prayerAssumed = CombatCalculator.PrayerBoost.NONE; useBoosts = true;
         wornGear = List.of();
+        owned = null;
         account = AccountContext.UNKNOWN;
         monsterChoice = null;
+        wikiProfile = null; wikiMethod = null; wikiKey = ""; ++wikiRevision; rankListener.accept(Map.of());
         plannedSpell = "Choose spell";
         planningSnapshot = null;
         previewTask = null;
@@ -109,6 +129,11 @@ public final class UltimateSlayerPanel extends PluginPanel
     {
         if (optimizedDraft != null && config.combatEnabled() && showOwned) { return optimizedDraft; }
         if (owned == null) { return null; }
+        if (config.wikiGearEnabled() && wikiMethod != null)
+        {
+            return draftCache.computeIfAbsent("wiki:" + wikiKey + ":" + wikiMethod.name + ":" + contextLocation() + ":" + exemption,
+                ignored -> WikiGearPlanner.plan(owned.gear, wikiMethod, contextTask(), contextLocation(), exemption, account, combatInputs()));
+        }
         return draftCache.computeIfAbsent(selectedStyle() + ":" + contextTask() + ":" + contextLocation() + ":" + exemption,
             ignored -> OwnedGearPlanner.shortlist(owned.gear, selectedStyle(), contextTask(), contextLocation(), exemption, account));
     }
@@ -178,7 +203,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         JButton info = new JButton("Info"); styleButton(info); info.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
         info.addActionListener(e -> infoAction.run()); header.add(info);
         addBlock(header);
-        addBlock(label("Version 0.7.0 · Information only", MUTED));
+        addBlock(label("Version 0.9.0 - Information only", MUTED));
 
         JPanel context = card("TASK / LOCATION");
         JComboBox<String> preview = new JComboBox<>(TaskReferenceData.tasks());
@@ -219,7 +244,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         {
             JPanel task = card("YOUR TASK");
             task.add(label(state.task == null || state.task.isEmpty() ? "No task information" : state.task, Color.WHITE));
-            task.add(label(state.task == null ? (state.loggedIn ? "Task data unavailable · refresh" : "Log in to see your task")
+            task.add(label(state.task == null ? (state.loggedIn ? "Task data unavailable � refresh" : "Log in to see your task")
                 : state.remaining + " remaining", MUTED));
             if (state.location != null && !state.location.isEmpty())
             {
@@ -229,6 +254,8 @@ public final class UltimateSlayerPanel extends PluginPanel
         }
 
         if (config.monstersEnabled()) { addMonsterReference(); }
+        requestWiki(false);
+        if (config.wikiGearEnabled()) { addWikiStrategy(); }
         if (config.requiredItemsEnabled()) { addRequiredItems(); }
         if (config.spellsEnabled() && "Magic".equals(preferredStyle)) { addSpellPlan(); }
         if (config.combatEnabled()) { addCombatComparison(); }
@@ -259,12 +286,16 @@ public final class UltimateSlayerPanel extends PluginPanel
                 choice.setMargin(new java.awt.Insets(4, 4, 4, 4));
                 styleButton(choice);
                 choice.setToolTipText("Choose a style for the bonus draft and optional modeled comparison");
-                choice.addActionListener(e -> { preferredStyle = style; invalidateCombat(); rebuild(); });
+                choice.addActionListener(e -> {
+                    preferredStyle = style; wikiMethod = null;
+                    if (wikiProfile != null) { for (WikiStrategy.Method method : wikiProfile.methods) { if (method.style.equals(style)) { wikiMethod = method; break; } } }
+                    draftCache.clear(); invalidateCombat(); rebuild();
+                });
                 group.add(choice);
                 styles.add(choice);
             }
             gear.add(styles);
-            if ("Melee".equals(preferredStyle))
+            if ("Melee".equals(preferredStyle) && !(config.wikiGearEnabled() && wikiMethod != null))
             {
                 JComboBox<String> subtype = new JComboBox<>(new String[]{"Melee", "Stab", "Slash", "Crush"});
                 subtype.setSelectedItem(meleeType); subtype.setAlignmentX(LEFT_ALIGNMENT); subtype.setPreferredSize(new Dimension(176, 28)); subtype.setMaximumSize(new Dimension(176, 28));
@@ -273,6 +304,8 @@ public final class UltimateSlayerPanel extends PluginPanel
             boolean ownedMode = config.ownedGearEnabled() && showOwned;
             OwnedGearPlanner.Draft draft = ownedMode ? contextDraft() : null;
             gear.add(label(ownedMode ? "Owned setup draft - check marked items" : "Currently worn", MUTED));
+            if (ownedMode && config.wikiGearEnabled() && wikiMethod == null)
+            { gear.add(label("No Wiki method selected: the grid below is a generic bonus shortlist. Task-specific bank ranks are off.", GOLD)); }
             if (ownedMode && owned == null) { gear.add(label("Open your bank to load owned options. Bank snapshots must be enabled.", GOLD)); }
             if (draft != null)
             {
@@ -312,7 +345,12 @@ public final class UltimateSlayerPanel extends PluginPanel
             {
                 List<OwnedGearPlanner.Gear> alternatives = draft.alternatives.get(selectedOwnedSlot);
                 gear.add(label("Click a gear slot for its top 3 options.", MUTED));
-                if (alternatives != null) { for (OwnedGearPlanner.Gear option : alternatives) { gear.add(label(option.describe(selectedStyle()) + (draft.unverified.containsKey(option.id) ? " — CHECK: " + draft.unverified.get(option.id) : ""), Color.WHITE)); } }
+                if (alternatives != null) {
+                    for (int rank = 0; rank < alternatives.size(); rank++) {
+                        OwnedGearPlanner.Gear option = alternatives.get(rank);
+                        gear.add(label((rank + 1) + ". " + option.describe(selectedStyle()) + (draft.unverified.containsKey(option.id) ? " - CHECK: " + draft.unverified.get(option.id) : ""), BankGearOverlay.rankColor(rank + 1)));
+                    }
+                }
                 else { gear.add(label("No compatible ranked option observed for this slot.", MUTED)); }
                 boolean explain = expanded.getOrDefault("ranking", false);
                 JButton explanation = new JButton((explain ? "Hide" : "Show") + " ranking details");
@@ -321,7 +359,10 @@ public final class UltimateSlayerPanel extends PluginPanel
                 explanation.setAlignmentX(LEFT_ALIGNMENT);
                 explanation.addActionListener(e -> { expanded.put("ranking", !explain); rebuild(); });
                 gear.add(explanation);
-                if (explain) { gear.add(label(optimizedDraft != null ? "Joint modeled setup: the combat panel explains the chosen stance, speed, effects and assumptions. Bounded search, not an exhaustive optimum. CHECK items still need verification." : "Order: damage bonus, then attack bonus. Known unmet level/quest requirements are excluded. CHECK means equip requirements or charges remain unverified. Weapon speed is shown; compatible ammo is matched for supported weapons. Set effects, spell choice, exact DPS and internal charges are not calculated. Independent slot leaders are not an optimised loadout.", MUTED)); }
+                if (explain) { gear.add(label(config.wikiGearEnabled() && wikiMethod != null && optimizedDraft == null
+                    ? "Source: " + wikiProfile.title + " / " + wikiMethod.name + ". Only owned table entries and required protection are ranked. Whole-loadout DPS refines a slot when every candidate is supported; otherwise Wiki order. Conditional choices and charges still need checking. Colour means relative owned rank, not verified exact DPS."
+                    : optimizedDraft != null ? "Joint modeled setup: the combat panel explains the chosen stance, speed, effects and assumptions. Bounded search, not an exhaustive optimum. CHECK items still need verification."
+                    : "Generic bonus shortlist only: damage bonus, then attack bonus. This is not task-specific Wiki guidance or DPS. Bank rank highlights are disabled without a matching Wiki strategy.", MUTED)); }
                 gear.add(label("Snapshot: " + java.time.format.DateTimeFormatter.ofPattern("dd MMM HH:mm").withZone(java.time.ZoneId.systemDefault()).format(java.time.Instant.ofEpochMilli(owned.capturedAt))
                     + ". " + owned.unknownItems + " item IDs lack stat data.", MUTED));
             }
@@ -331,7 +372,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         if (config.inventoryEnabled())
         {
             JPanel inventory = card("INVENTORY");
-            inventory.add(label("Currently carried · 28 slots", MUTED));
+            inventory.add(label("Currently carried � 28 slots", MUTED));
             JPanel grid = new JPanel(new GridLayout(7, 4, 4, 4));
             grid.setOpaque(false);
             for (int i = 0; i < 28; i++)
@@ -373,6 +414,7 @@ public final class UltimateSlayerPanel extends PluginPanel
             status.add(clear);
             addBlock(status);
         }
+        publishRanks();
         revalidate();
         repaint();
     }
@@ -389,12 +431,18 @@ public final class UltimateSlayerPanel extends PluginPanel
         { combatStatus = "Choose a target and wait for this bank snapshot's gear metadata."; rebuild(); return; }
         final long revision = searchRevision;
         final CombatCalculator.Inputs inputs = combatInputs(); final OwnedGearCatalog captured = owned; final BankSnapshot snapshot = planningSnapshot;
-        final String style = selectedStyle(); final boolean compare = allStyles;
+        final WikiStrategy.Method capturedMethod = config.wikiGearEnabled() ? wikiMethod : null;
+        final String style = selectedStyle(); final boolean compare = allStyles && capturedMethod == null;
         combatStatus = "Comparing complete loadouts in the background...";
         searchJob = combatWorker.submit(() -> {
             try
             {
-                LoadoutOptimizer.SearchResult result = new LoadoutOptimizer(captured.gear, snapshot).search(inputs, style, compare);
+                List<OwnedGearPlanner.Gear> candidates = captured.gear;
+                if (capturedMethod != null)
+                {
+                    candidates = WikiGearPlanner.candidates(captured.gear, capturedMethod, inputs.task, inputs.location, inputs.exemption);
+                }
+                LoadoutOptimizer.SearchResult result = new LoadoutOptimizer(candidates, snapshot).search(inputs, style, compare);
                 javax.swing.SwingUtilities.invokeLater(() -> {
                     if (disposed || revision != searchRevision) { return; }
                     searchJob = null; combatResults = result;
@@ -438,7 +486,10 @@ public final class UltimateSlayerPanel extends PluginPanel
                 section.add(label(setup.title(), Color.WHITE)); section.add(label(setup.combat.summary(), GOLD));
                 JButton show = new JButton("Show in draft"); styleButton(show); show.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
                 show.addActionListener(e -> {
-                    optimizedDraft = setup.asDraft(); displayedSetup = setup; showOwned = true;
+                    OwnedGearPlanner.Draft baseline = contextDraft();
+                    optimizedDraft = config.wikiGearEnabled() && wikiMethod != null && baseline != null
+                        ? WikiGearPlanner.withModeledSelection(baseline, setup) : setup.asDraft();
+                    displayedSetup = setup; showOwned = true;
                     if (OwnedGearPlanner.isMelee(setup.inputs.mode.style)) { preferredStyle = "Melee"; meleeType = setup.inputs.mode.style; }
                     else { preferredStyle = setup.inputs.mode.style; }
                     rebuild();
@@ -473,6 +524,94 @@ public final class UltimateSlayerPanel extends PluginPanel
             for (String exclusion : combatResults.excluded) { explanation.append("Not compared: ").append(exclusion).append('\n'); }
             disclosure("Why this setup / limits", explanation.toString());
         }
+    }
+
+    private void requestWiki(boolean force)
+    {
+        String target = strategyTarget();
+        boolean valid = config.wikiGearEnabled() && config.equipmentEnabled() && config.ownedGearEnabled()
+            && owned != null && target != null && !target.isBlank()
+            && (previewTask != null || state.loggedIn && state.remaining > 0);
+        String next = valid ? target + ":" + contextTask() + ":" + (monsterChoice == null ? 0 : monsterChoice.id)
+            + ":" + config.wikiOnlineEnabled() : "";
+        if (!force && next.equals(wikiKey)) { return; }
+        wikiKey = next; wikiProfile = null; wikiMethod = null; draftCache.clear(); invalidateCombat();
+        rankListener.accept(Map.of()); long revision = ++wikiRevision;
+        if (!valid) { return; }
+        wikiProfile = WikiStrategy.bundled(target); chooseWikiMethod();
+        if (wikiService != null)
+        {
+            wikiService.load(target, contextTask(), config.wikiOnlineEnabled(), force, result -> javax.swing.SwingUtilities.invokeLater(() -> {
+                if (disposed || revision != wikiRevision || !config.wikiGearEnabled()) { return; }
+                String previous = wikiMethod == null ? "" : wikiMethod.name;
+                wikiProfile = result; wikiMethod = null;
+                for (WikiStrategy.Method method : result.methods) { if (method.name.equals(previous)) { wikiMethod = method; break; } }
+                chooseWikiMethod(); draftCache.clear(); invalidateCombat(); rebuild();
+            }));
+        }
+    }
+    private void chooseWikiMethod()
+    {
+        if (wikiProfile == null) { return; }
+        if (wikiMethod == null)
+        {
+            for (WikiStrategy.Method method : wikiProfile.methods) { if (method.style.equals(preferredStyle)) { wikiMethod = method; break; } }
+            if (wikiMethod == null && !wikiProfile.methods.isEmpty()) { wikiMethod = wikiProfile.methods.get(0); }
+        }
+        if (wikiMethod != null)
+        {
+            preferredStyle = wikiMethod.style;
+            String n = wikiMethod.name.toLowerCase(java.util.Locale.ROOT);
+            meleeType = n.contains("crush") ? "Crush" : n.contains("stab") ? "Stab" : n.contains("slash") ? "Slash" : "Melee";
+        }
+    }
+    private void addWikiStrategy()
+    {
+        JPanel section = card("WIKI STRATEGY - OWNED GEAR");
+        section.add(label(wikiProfile == null ? (wikiKey.isEmpty() ? "Open your bank and choose a task or monster." : "Loading public Wiki equipment tables...") : wikiProfile.status, GOLD));
+        if (wikiProfile != null)
+        {
+            section.add(label("Source: " + wikiProfile.title + "\nReviewed/fetched: " + java.time.Instant.ofEpochMilli(wikiProfile.fetchedAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate(), MUTED));
+            if (!wikiProfile.methods.isEmpty())
+            {
+                JComboBox<WikiStrategy.Method> methods = new JComboBox<>(wikiProfile.methods.toArray(new WikiStrategy.Method[0]));
+                methods.setSelectedItem(wikiMethod); methods.setAlignmentX(LEFT_ALIGNMENT); methods.setMaximumSize(new Dimension(188, 28));
+                methods.addActionListener(e -> { wikiMethod = (WikiStrategy.Method) methods.getSelectedItem(); chooseWikiMethod(); draftCache.clear(); invalidateCombat(); rebuild(); });
+                section.add(methods);
+                section.add(label("1 green: best owned; 2 yellow: alternative; 3 red: fallback. Wiki baseline, not a guaranteed DPS optimum. Required protection overrides rankings.", MUTED));
+                if (owned != null && wikiMethod != null)
+                {
+                    List<OwnedGearPlanner.Gear> specials = WikiGearPlanner.specials(owned.gear, wikiMethod, account);
+                    section.add(label("Special attack weapons (separate role): " + (specials.isEmpty() ? "none observed from this table" : specials.stream().map(g -> g.name).collect(java.util.stream.Collectors.joining(", "))), MUTED));
+                }
+            }
+            JButton source = new JButton("Open strategy and conditions"); styleButton(source);
+            String url = wikiProfile.url(); source.addActionListener(e -> net.runelite.client.util.LinkBrowser.browse(url)); section.add(source);
+        }
+        JButton retry = new JButton("Refresh Wiki table"); styleButton(retry);
+        retry.setEnabled(!wikiKey.isEmpty()); retry.addActionListener(e -> { requestWiki(true); rebuild(); }); section.add(retry);
+        section.add(label(config.wikiOnlineEnabled() ? "Public page names only are requested. Tables are cached for 7 days." : "Online updates disabled; cached/bundled tables only.", MUTED));
+        addBlock(section);
+    }
+    private void publishRanks()
+    {
+        if (!config.bankRanksEnabled() || !config.wikiGearEnabled() || !config.equipmentEnabled()
+            || !config.ownedGearEnabled() || !showOwned || wikiMethod == null || owned == null || !state.loggedIn
+            || previewTask == null && state.remaining <= 0)
+        { rankListener.accept(Map.of()); return; }
+        OwnedGearPlanner.Draft draft = contextDraft();
+        if (draft == null || draft.protectionMissing || !draft.selected.containsKey(3)) { rankListener.accept(Map.of()); return; }
+        Map<Integer, Integer> ranks = new HashMap<>();
+        draft.alternatives.forEach((slot, candidates) -> {
+            for (int i = 0; i < candidates.size() && i < 3; i++) {
+                OwnedGearPlanner.Gear candidate = candidates.get(i); final int rank = i + 1;
+                for (OwnedGearPlanner.Gear item : owned.gear) {
+                    if (item.base == candidate.base && wikiMethod.rank(item) == wikiMethod.rank(candidate)
+                        && !WikiStrategy.normalize(item.name).matches(".*(uncharged|broken|inactive|\\(empty\\)).*")) { ranks.merge(item.id, rank, Math::min); }
+                }
+            }
+        });
+        rankListener.accept(Map.copyOf(ranks));
     }
 
     private void addSpellPlan()
@@ -514,7 +653,7 @@ public final class UltimateSlayerPanel extends PluginPanel
                 section.add(wiki);
             }
         }
-        section.add(label(catalog.monsters.size() + " monster variants · " + catalog.equipment.size() + " equipment records. Offline reference snapshot: 5 Nov 2026.", MUTED));
+        section.add(label(catalog.monsters.size() + " monster variants � " + catalog.equipment.size() + " equipment records. Offline reference snapshot: 5 Nov 2026.", MUTED));
         addBlock(section);
     }
 
@@ -599,7 +738,7 @@ public final class UltimateSlayerPanel extends PluginPanel
     {
         boolean open = expanded.getOrDefault(title, false);
         JPanel section = card(null);
-        JButton toggle = new JButton((open ? "▾ " : "▸ ") + title);
+        JButton toggle = new JButton((open ? "? " : "? ") + title);
         styleButton(toggle);
         toggle.setHorizontalAlignment(SwingConstants.LEFT);
         toggle.setAlignmentX(LEFT_ALIGNMENT);
@@ -618,7 +757,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         tile.setBorder(BorderFactory.createLineBorder(config.highContrast() ? MUTED : new Color(65, 69, 76)));
         ItemDisplay display = items.get(id);
         if (display == null && owned != null) { display = owned.icons.get(id); }
-        JLabel icon = new JLabel(display == null ? "·" : "", SwingConstants.CENTER);
+        JLabel icon = new JLabel(display == null ? "�" : "", SwingConstants.CENTER);
         icon.setForeground(MUTED);
         if (display != null) { icon.setIcon(display.icon); }
         tile.add(icon, BorderLayout.CENTER);
@@ -629,7 +768,7 @@ public final class UltimateSlayerPanel extends PluginPanel
             count.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
             tile.add(count, BorderLayout.NORTH);
         }
-        tile.setToolTipText(display == null ? emptyName : display.name + (quantity > 1 ? " × " + quantity : ""));
+        tile.setToolTipText(display == null ? emptyName : display.name + (quantity > 1 ? " � " + quantity : ""));
         return tile;
     }
 
@@ -700,3 +839,4 @@ public final class UltimateSlayerPanel extends PluginPanel
         add(Box.createVerticalStrut(8));
     }
 }
+

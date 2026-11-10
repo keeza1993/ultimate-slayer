@@ -37,4 +37,9 @@ The adapted clan logo derives from the user's existing AFK Timers artwork, with 
 
 ## Distribution packaging
 
+## v0.9.0 Wiki strategy equipment
+
+`data/araxxor-strategy.json` records factual equipment choices/order independently extracted from the OSRS Wiki's Araxxor/Strategies tables, reviewed 10 November 2026. Source: https://oldschool.runescape.wiki/w/Araxxor/Strategies ; contributors: OSRS Wiki contributors. No article prose or calculator code is bundled. Other Wiki strategy tables are fetched optionally at runtime, with source title and retrieval date displayed and a local public-data cache. See WIKI_GEAR.md for scope, conditions and networking details. The plugin is not endorsed by the Wiki. Bank overlay code is an original use of RuneLite's public WidgetItemOverlay API.
+
 Licence texts are in src/main/resources/META-INF/licenses and these notices are also included in META-INF/THIRD_PARTY.md, so both standard Plugin Hub builds and local builds retain them without custom packaging tasks. Gradle wrapper files retain the Gradle project's upstream notices (Apache 2.0).
+
