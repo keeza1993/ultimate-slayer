@@ -60,6 +60,9 @@ public final class UltimateSlayerPlugin extends Plugin
     @Inject private ItemManager itemManager;
     @Inject private UltimateSlayerConfig config;
     @Inject private ConfigManager configManager;
+    @Inject private net.runelite.client.ui.overlay.OverlayManager overlayManager;
+    @Inject private BankGearOverlay bankGearOverlay;
+    private WikiStrategyService wikiService;
     private volatile BankSnapshotController bank;
     private volatile UltimateSlayerPanel panel;
     private NavigationButton navigation;
@@ -81,11 +84,15 @@ public final class UltimateSlayerPlugin extends Plugin
     {
         ReferenceCatalog.get(); // Load bundled data once, before constructing the sidebar.
         active = true;
+        wikiService = new WikiStrategyService(this::getPluginDirectory);
+        overlayManager.add(bankGearOverlay);
         ++generation;
         if (config.bankEnabled()) { startBank(); }
         SwingUtilities.invokeLater(() -> {
             if (!active) { return; }
             panel = new UltimateSlayerPanel(config, this::manualRefresh);
+            panel.setRankListener(bankGearOverlay::setRanks);
+            panel.setWikiService(wikiService);
             panel.setInfoAction(() -> showWelcome(true));
             panel.setBankStatus(bankMessage, this::clearBank);
             panel.setOwnedGear(ownedCatalog);
@@ -101,6 +108,8 @@ public final class UltimateSlayerPlugin extends Plugin
     protected void shutDown()
     {
         active = false;
+        bankGearOverlay.setRanks(Map.of()); overlayManager.remove(bankGearOverlay);
+        if (wikiService != null) { wikiService.close(); wikiService = null; }
         ++catalogRevision;
         ownedCatalog = null;
         planningSnapshot = null;
@@ -121,6 +130,7 @@ public final class UltimateSlayerPlugin extends Plugin
         // Clear immediately on account transitions, including connection loss/hops.
         if (event.getGameState() != GameState.LOGGED_IN)
         {
+            bankGearOverlay.setRanks(Map.of());
             final long token = ++generation;
             if (bank != null) { bank.accountTransition(); }
             SwingUtilities.invokeLater(() -> {
@@ -211,6 +221,7 @@ public final class UltimateSlayerPlugin extends Plugin
 
     private void rebuildOwnedCatalog(BankSnapshot snapshot)
     {
+        bankGearOverlay.setRanks(Map.of());
         final long token = ++catalogRevision;
         ownedCatalog = null;
         SwingUtilities.invokeLater(() -> {
@@ -243,6 +254,7 @@ public final class UltimateSlayerPlugin extends Plugin
                 }
                 if (!seen.add(id)) { continue; }
                 ItemStats stats = itemManager.getItemStats(id);
+                if (stats == null) { stats = itemManager.getItemStats(ItemVariationMapping.map(id)); }
                 if (stats == null) { unknown[0]++; continue; }
                 ItemEquipmentStats equipment = stats.getEquipment();
                 if (!stats.isEquipable() || equipment == null) { continue; }
@@ -296,6 +308,7 @@ public final class UltimateSlayerPlugin extends Plugin
     @Subscribe
     public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
     {
+        bankGearOverlay.setRanks(Map.of());
         ++generation;
         SwingUtilities.invokeLater(() -> { if (panel != null) { panel.resetAccountContext(); panel.refreshAppearance(); } });
         if (bank != null) { bank.accountTransition(); bank.loggedIn(); }
@@ -305,6 +318,7 @@ public final class UltimateSlayerPlugin extends Plugin
     @Subscribe
     public void onProfileChanged(ProfileChanged event)
     {
+        bankGearOverlay.setRanks(Map.of());
         ++generation;
         SwingUtilities.invokeLater(() -> { if (panel != null) { panel.resetAccountContext(); panel.refreshAppearance(); } });
         if (bank != null) { bank.stop(); bank = null; }
@@ -480,3 +494,4 @@ public final class UltimateSlayerPlugin extends Plugin
         return image;
     }
 }
+

@@ -1,4 +1,5 @@
 .gradle/
+.gradle-home/
 build/
 .idea/
 *.iml
@@ -9,3 +10,4 @@ build/
 .env
 .env.*
 credentials*
+

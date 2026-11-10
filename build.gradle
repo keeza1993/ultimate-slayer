@@ -10,7 +10,7 @@ repositories {
 }
 
 group = 'com.imth3keeza0.ultimateslayer'
-version = '0.8.0'
+version = '0.9.0'
 def runeLiteVersion = 'latest.release'
 
 dependencies {
@@ -90,3 +90,11 @@ tasks.register('previewComparison', JavaExec) {
     jvmArgs '-ea', '-Djava.awt.headless=true'
 }
 tasks.named('check') { dependsOn 'previewComparison' }
+
+tasks.register('verifyWikiGear', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.imth3keeza0.ultimateslayer.WikiGearChecks'
+    jvmArgs '-ea', '-Djava.awt.headless=true'
+}
+tasks.named('check') { dependsOn 'verifyWikiGear' }
+

@@ -7,6 +7,15 @@ import net.runelite.client.config.ConfigItem;
 @ConfigGroup(UltimateSlayerConfig.GROUP)
 public interface UltimateSlayerConfig extends Config
 {
+    @ConfigItem(keyName = "wikiGearEnabled", name = "Wiki strategy gear", description = "Use monster-specific Wiki equipment tables and your owned items; incomplete tables are labelled", position = 15)
+    default boolean wikiGearEnabled() { return true; }
+
+    @ConfigItem(keyName = "wikiOnlineEnabled", name = "Update public Wiki tables", description = "Fetch public monster/task page names only from OSRS Wiki in the background; caches for seven days. No bank or account data is sent", position = 16)
+    default boolean wikiOnlineEnabled() { return true; }
+
+    @ConfigItem(keyName = "bankRanksEnabled", name = "Bank gear ranks", description = "Number and colour your owned Wiki-ranked choices: 1 green, 2 yellow, 3 red. Requires an active task or explicit preview", position = 17)
+    default boolean bankRanksEnabled() { return true; }
+
     @ConfigItem(keyName = "suppliesEnabled", name = "Supply planning", description = "Show cached supply counts and finishing-item estimates; never rescans the bank", position = 10)
     default boolean suppliesEnabled() { return true; }
 
@@ -53,3 +62,4 @@ public interface UltimateSlayerConfig extends Config
     @ConfigItem(keyName = "travelEnabled", name = "Travel section", description = "Show reference travel routes, access notes and location links", position = 9)
     default boolean travelEnabled() { return true; }
 }
+

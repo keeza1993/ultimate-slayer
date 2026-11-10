@@ -31,6 +31,11 @@ public final class EquipmentEligibility
             case "magic shortbow": case "magic shortbow (i)": skill = Skill.RANGED; level = 50; break;
             case "rune crossbow": skill = Skill.RANGED; level = 61; break;
             case "abyssal whip": skill = Skill.ATTACK; level = 70; break;
+            case "abyssal bludgeon":
+                String bludgeonStrength = levelCheck(account, Skill.STRENGTH, 70);
+                if (bludgeonStrength != null) { return bludgeonStrength; }
+                skill = Skill.ATTACK; level = 70; break;
+            case "zombie axe": skill = Skill.ATTACK; level = 65; break;
             case "leaf-bladed spear": skill = Skill.ATTACK; level = 50; slayer = 55; break;
             case "leaf-bladed sword": skill = Skill.ATTACK; level = 50; slayer = 55; break;
             case "leaf-bladed battleaxe": skill = Skill.ATTACK; level = 65; slayer = 55; break;
@@ -86,3 +91,4 @@ public final class EquipmentEligibility
         return null;
     }
 }
+
