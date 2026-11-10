@@ -190,11 +190,13 @@ public final class WikiStrategy
         for (Method method : profile.methods)
         {
             JsonObject row = new JsonObject(); row.addProperty("name", method.name); JsonObject slots = new JsonObject();
-            method.slots.forEach((slot, names) -> slots.add(slot.toString(), new Gson().toJsonTree(names)));
-            row.add("slots", slots); row.add("specials", new Gson().toJsonTree(method.specials)); methods.add(row);
+            method.slots.forEach((slot, names) -> slots.add(slot.toString(), jsonStrings(names)));
+            row.add("slots", slots); row.add("specials", jsonStrings(method.specials)); methods.add(row);
         }
-        root.add("methods", methods); root.add("inventory", new Gson().toJsonTree(profile.inventory)); return root;
+        root.add("methods", methods); root.add("inventory", jsonStrings(profile.inventory)); return root;
     }
+    private static JsonArray jsonStrings(List<String> values)
+    { JsonArray result=new JsonArray(); for(String value:values){result.add(value);} return result; }
     static Profile fromJson(JsonObject root, String status)
     {
         List<Method> methods = new ArrayList<>();
