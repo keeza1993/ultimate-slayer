@@ -102,7 +102,7 @@ public final class WikiStrategyService implements AutoCloseable
         String filename = Base64.getUrlEncoder().withoutPadding().encodeToString(key.getBytes(StandardCharsets.UTF_8));
         return directory.get().joinSegment("wiki-strategies").joinSegment(filename + ".json");
     }
-    private static WikiStrategy.Profile fetch(String title) throws IOException
+    static WikiStrategy.Profile fetch(String title) throws IOException
     {
         String query = "https://oldschool.runescape.wiki/api.php?action=parse&format=json&formatversion=2&redirects=1&prop=text&page="
             + URLEncoder.encode(title, StandardCharsets.UTF_8);

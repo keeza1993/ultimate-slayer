@@ -98,3 +98,9 @@ tasks.register('verifyWikiGear', JavaExec) {
 }
 tasks.named('check') { dependsOn 'verifyWikiGear' }
 
+tasks.register('verifyWikiLive', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.imth3keeza0.ultimateslayer.WikiLiveChecks'
+    jvmArgs '-ea', '-Djava.awt.headless=true'
+}
+

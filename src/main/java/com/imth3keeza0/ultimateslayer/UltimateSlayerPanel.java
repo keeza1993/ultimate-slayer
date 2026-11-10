@@ -431,8 +431,8 @@ public final class UltimateSlayerPanel extends PluginPanel
         { combatStatus = "Choose a target and wait for this bank snapshot's gear metadata."; rebuild(); return; }
         final long revision = searchRevision;
         final CombatCalculator.Inputs inputs = combatInputs(); final OwnedGearCatalog captured = owned; final BankSnapshot snapshot = planningSnapshot;
-        final String style = selectedStyle(); final boolean compare = allStyles;
         final WikiStrategy.Method capturedMethod = config.wikiGearEnabled() ? wikiMethod : null;
+        final String style = selectedStyle(); final boolean compare = allStyles && capturedMethod == null;
         combatStatus = "Comparing complete loadouts in the background...";
         searchJob = combatWorker.submit(() -> {
             try
@@ -486,7 +486,10 @@ public final class UltimateSlayerPanel extends PluginPanel
                 section.add(label(setup.title(), Color.WHITE)); section.add(label(setup.combat.summary(), GOLD));
                 JButton show = new JButton("Show in draft"); styleButton(show); show.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
                 show.addActionListener(e -> {
-                    optimizedDraft = setup.asDraft(); displayedSetup = setup; showOwned = true;
+                    OwnedGearPlanner.Draft baseline = contextDraft();
+                    optimizedDraft = config.wikiGearEnabled() && wikiMethod != null && baseline != null
+                        ? WikiGearPlanner.withModeledSelection(baseline, setup) : setup.asDraft();
+                    displayedSetup = setup; showOwned = true;
                     if (OwnedGearPlanner.isMelee(setup.inputs.mode.style)) { preferredStyle = "Melee"; meleeType = setup.inputs.mode.style; }
                     else { preferredStyle = setup.inputs.mode.style; }
                     rebuild();

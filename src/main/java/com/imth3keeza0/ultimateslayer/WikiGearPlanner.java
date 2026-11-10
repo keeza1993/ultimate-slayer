@@ -6,6 +6,22 @@ import java.util.*;
 public final class WikiGearPlanner
 {
     private WikiGearPlanner() {}
+    public static OwnedGearPlanner.Draft withModeledSelection(OwnedGearPlanner.Draft baseline, LoadoutOptimizer.Setup setup)
+    {
+        Map<Integer, List<OwnedGearPlanner.Gear>> alternatives = new HashMap<>();
+        for (Map.Entry<Integer, OwnedGearPlanner.Gear> entry : setup.gear.entrySet())
+        {
+            List<OwnedGearPlanner.Gear> top = new ArrayList<>(); top.add(entry.getValue());
+            for (OwnedGearPlanner.Gear option : baseline.alternatives.getOrDefault(entry.getKey(), List.of()))
+            { if (top.size() < 3 && top.stream().noneMatch(g -> g.base == option.base)
+                && (entry.getKey() != 13 || !setup.inputs.mode.style.equals("Ranged") || AmmoCompatibility.matches(setup.gear.get(3), option))) { top.add(option); } }
+            alternatives.put(entry.getKey(), List.copyOf(top));
+        }
+        Map<Integer,String> checks = new HashMap<>(baseline.unverified); checks.putAll(setup.asDraft().unverified);
+        return new OwnedGearPlanner.Draft(setup.gear, alternatives,
+            "Best found modeled Wiki-candidate setup. Rank 1 is the chosen modeled setup; remaining choices retain Wiki-baseline order. " + setup.combat.summary(),
+            baseline.protectionMissing, baseline.omitted, checks);
+    }
     public static List<OwnedGearPlanner.Gear> candidates(List<OwnedGearPlanner.Gear> owned, WikiStrategy.Method method,
         String task, TaskReferenceData.Location location, TaskReferenceData.Exemption exemption)
     {
