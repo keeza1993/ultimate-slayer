@@ -11,6 +11,7 @@ Plan Slayer tasks and compare equipment you own from a RuneLite sidebar. Created
 - Compare owned melee, ranged and magic setups for supported normal attacks.
 - Review equipment requirements, spell plans and combat assumptions before choosing a setup.
 - Enable the modules you want in plugin settings.
+- Compact sidebar: your task stays visible; Gear, Supplies and Travel open on click. Detailed settings and references are under More options. Open/closed state survives sidebar refreshes.
 - Plan protection, prayer, food, tools and outbound/return teleports in a priority-sorted trip checklist. Live carried counts stay separate from bank-at-capture quantities. See [SUPPLIES.md](SUPPLIES.md).
 
 The plugin provides information and planning only. It never equips items, moves your character or performs game actions.
@@ -39,7 +40,7 @@ Want to join OSRS geezers? Add **Th3keeza0** in game or [join our Discord](https
 
 ## Sources and development
 
-For a replacement update with files at the archive's top level, download **UltimateSlayer-update** from the successful build's artifacts, extract directly into your existing project folder, accept **Replace files**, and run `gradlew.bat run`. The sidebar version is **0.10.0**. GitHub's ordinary source ZIP still includes its own enclosing folder.
+For a replacement update with files at the archive's top level, download **UltimateSlayer-update** from the successful build's artifacts, extract directly into your existing project folder, accept **Replace files**, and run `gradlew.bat run`. The sidebar version is **0.10.1**. GitHub's ordinary source ZIP still includes its own enclosing folder.
 
 Data licences and attribution are documented in [THIRD_PARTY.md](THIRD_PARTY.md) and [SOURCES.md](SOURCES.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and [VALIDATION.md](VALIDATION.md) for validation coverage.
 
