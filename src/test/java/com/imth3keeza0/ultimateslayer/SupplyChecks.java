@@ -38,6 +38,8 @@ public final class SupplyChecks
         require(!find(wrongBook,"return").packed(runes),"House spell not counted on another spellbook");
         SidebarState scroll=state("Araxxor",Map.of(ItemID.TELEPORTSCROLL_SPIDERCAVE,1));
         require(find(plan("Araxxor",scroll,bank,false,false),"fairy-staff")==null,"Direct cave scroll route does not demand an unnecessary staff");
+        SidebarState recoloured=state("Dust devils",Map.of(ItemID.SLAYER_HELM_I_RED,1));
+        require(plan("Dust devil",recoloured,bank,false,false).stream().anyMatch(n->n.key.startsWith("rule")&&n.carried(recoloured)>0),"Recoloured protective helmets satisfy carried supply checks");
         UltimateSlayerConfig priorities=new UltimateSlayerConfig(){@Override public SupplyPlanner.Priority prayerPriority(){return SupplyPlanner.Priority.LOW;}};
         List<SupplyPlanner.Need> sorted=SupplyPlanner.sorted(araxxor,priorities,live,bank,false);
         require(sorted.indexOf(find(sorted,"food"))<sorted.indexOf(find(sorted,"prayer")),"User category priorities change checklist order");
@@ -67,4 +69,3 @@ public final class SupplyChecks
     {try{panel.setSize(225,panel.getPreferredSize().height);layout(panel);java.awt.image.BufferedImage image=new java.awt.image.BufferedImage(225,panel.getHeight(),java.awt.image.BufferedImage.TYPE_INT_RGB);java.awt.Graphics2D g=image.createGraphics();panel.printAll(g);g.dispose();javax.imageio.ImageIO.write(image,"png",new java.io.File("build/supplies-preview.png"));}catch(java.io.IOException e){throw new IllegalStateException(e);}}
     private static void layout(java.awt.Container c){c.doLayout();for(java.awt.Component child:c.getComponents()){if(child instanceof java.awt.Container){layout((java.awt.Container)child);}}}
 }
-

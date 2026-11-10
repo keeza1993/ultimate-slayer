@@ -123,7 +123,11 @@ public final class SupplyPlanner
         for(TaskReferenceData.Rule rule:TaskReferenceData.rules(context,location,exemption,style))
         {
             if(rule.allowed.isEmpty()){continue;}
-            Choice choice=items(rule.text,rule.allowed.stream().mapToInt(Integer::intValue).toArray());
+            Set<Integer> allowed=new HashSet<>(rule.allowed);
+            if(snapshot!=null){for(int id:snapshot.bank.keySet()){if(rule.accepts(id)){allowed.add(id);}}}
+            for(int i=0;i<28;i++){int id=live.inventoryAt(i);if(id>0&&rule.accepts(id)){allowed.add(id);}}
+            for(int i=0;i<14;i++){int id=live.equipmentAt(i);if(id>0&&rule.accepts(id)){allowed.add(id);}}
+            Choice choice=items(rule.text,allowed.stream().mapToInt(Integer::intValue).toArray());
             long min=rule.slot<0 && (TaskReferenceData.key(context).equals("rockslugs") || TaskReferenceData.key(context).equals("desert lizards")) ? Math.max(1,live.remaining) : 1;
             result.add(new Need("rule"+(index++),rule.text,rule.slot<0?Category.TOOLS:Category.PROTECTION,
                 (wyvern?"Antifire does not replace icy-breath protection. ":"")+(min>1?"One-use baseline for the current remaining count; allow extras. ":"")+"See required-item and access checks.","items",List.of(choice),min,false));
@@ -194,4 +198,3 @@ public final class SupplyPlanner
     public static Priority priority(UltimateSlayerConfig config,Category category)
     {switch(category){case PROTECTION:return config.protectionPriority();case PRAYER:return config.prayerPriority();case FOOD:return config.foodPriority();case OUTBOUND:return config.outboundPriority();case RETURN:return config.returnPriority();case TOOLS:return config.toolsPriority();default:return config.extraSupplyPriority();}}
 }
-
