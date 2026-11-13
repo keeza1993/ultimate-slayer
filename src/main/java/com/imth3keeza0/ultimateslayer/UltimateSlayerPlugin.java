@@ -55,6 +55,7 @@ import net.runelite.client.ui.NavigationButton;
 public final class UltimateSlayerPlugin extends Plugin
 {
     @Inject private Client client;
+    @Inject private okhttp3.OkHttpClient httpClient;
     @Inject private ClientThread clientThread;
     @Inject private ClientToolbar toolbar;
     @Inject private ItemManager itemManager;
@@ -84,7 +85,7 @@ public final class UltimateSlayerPlugin extends Plugin
     {
         ReferenceCatalog.get(); // Load bundled data once, before constructing the sidebar.
         active = true;
-        wikiService = new WikiStrategyService(this::getPluginDirectory);
+        wikiService = new WikiStrategyService(this::getPluginDirectory, httpClient);
         overlayManager.add(bankGearOverlay);
         ++generation;
         if (config.bankEnabled()) { startBank(); }

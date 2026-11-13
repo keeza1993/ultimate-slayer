@@ -9,17 +9,28 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
 import net.runelite.client.util.Filepath;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 /** Bounded background reads from a fixed public Wiki host. Never receives bank/account data. */
 public final class WikiStrategyService implements AutoCloseable
 {
     private static final long TTL = TimeUnit.DAYS.toMillis(7);
     private final BankSnapshotController.Directory directory;
+    private final OkHttpClient httpClient;
     private final Map<String, WikiStrategy.Profile> memory = new ConcurrentHashMap<>();
     private final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 20, TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(1), action -> { Thread t = new Thread(action, "ultimate-slayer-wiki"); t.setDaemon(true); return t; }, new ThreadPoolExecutor.DiscardOldestPolicy());
     private volatile boolean closed;
-    public WikiStrategyService(BankSnapshotController.Directory directory) { this.directory = directory; }
+    public WikiStrategyService(BankSnapshotController.Directory directory, OkHttpClient httpClient)
+    {
+        this.directory = directory;
+        this.httpClient = httpClient.newBuilder().connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(7, TimeUnit.SECONDS).callTimeout(15, TimeUnit.SECONDS)
+            .followRedirects(false).followSslRedirects(false).build();
+    }
     public void load(String target, String task, boolean online, boolean force, Consumer<WikiStrategy.Profile> callback)
     {
         if (closed) { return; }
@@ -68,7 +79,7 @@ public final class WikiStrategyService implements AutoCloseable
             if (closed || Thread.currentThread().isInterrupted()) { break; }
             try
             {
-                WikiStrategy.Profile found = fetch(page);
+                WikiStrategy.Profile found = fetch(httpClient, page);
                 if (!found.methods.isEmpty())
                 {
                     memory.put(key, found);
@@ -106,18 +117,19 @@ public final class WikiStrategyService implements AutoCloseable
         String filename = Base64.getUrlEncoder().withoutPadding().encodeToString(key.getBytes(StandardCharsets.UTF_8));
         return directory.get().joinSegment("wiki-strategies").joinSegment(filename + ".json");
     }
-    static WikiStrategy.Profile fetch(String title) throws IOException
+    static WikiStrategy.Profile fetch(OkHttpClient httpClient, String title) throws IOException
     {
         String query = "https://oldschool.runescape.wiki/api.php?action=parse&format=json&formatversion=2&redirects=1&prop=text&page="
             + URLEncoder.encode(title, StandardCharsets.UTF_8);
-        HttpURLConnection connection = (HttpURLConnection) new URL(query).openConnection();
-        connection.setConnectTimeout(5000); connection.setReadTimeout(7000); connection.setInstanceFollowRedirects(false);
-        connection.setRequestProperty("User-Agent", "UltimateSlayer/0.9.0 (RuneLite equipment planning; github.com/keeza1993/ultimate-slayer)");
-        try
+        Request request = new Request.Builder().url(query)
+            .header("User-Agent", "UltimateSlayer/0.10.1 (RuneLite equipment planning; github.com/keeza1993/ultimate-slayer)").build();
+        try (Response response = httpClient.newCall(request).execute())
         {
-            if (connection.getResponseCode() != 200) { throw new IOException("Wiki request unavailable"); }
+            if (response.code() != 200) { throw new IOException("Wiki request unavailable"); }
+            ResponseBody body = response.body();
+            if (body == null) { throw new IOException("Empty Wiki response"); }
             byte[] bytes;
-            try (InputStream input = connection.getInputStream()) { bytes = input.readNBytes(2_000_001); }
+            try (InputStream input = body.byteStream()) { bytes = input.readNBytes(2_000_001); }
             if (bytes.length > 2_000_000) { throw new IOException("Wiki response too large"); }
             JsonObject root = new JsonParser().parse(new String(bytes, StandardCharsets.UTF_8)).getAsJsonObject();
             if (!root.has("parse")) { throw new IOException("No Wiki parse result"); }
@@ -125,7 +137,6 @@ public final class WikiStrategyService implements AutoCloseable
             String actualTitle = parsed.get("title").getAsString();
             return WikiStrategy.parse(actualTitle, parsed.get("text").getAsString(), System.currentTimeMillis());
         }
-        finally { connection.disconnect(); }
     }
     @Override public void close() { closed = true; worker.shutdownNow(); memory.clear(); }
 }

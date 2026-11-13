@@ -18,6 +18,7 @@ public final class WikiGearChecks
             + "<table><caption>Recommended equipment for Ranged</caption>" + row("Head slot", "Slayer helmet (i)")
             + row("Weapon slot", "Twisted bow") + row("Ammo slot", "Dragon arrow") + "</table>";
         WikiStrategy.Profile parsed = WikiStrategy.parse("Araxxor/Strategies", html, 123);
+        verifyHttpTransport(html);
         require(parsed.methods.size() == 2, "Separate Wiki strategies retain their boundaries");
         require(parsed.methods.get(0).slots.get(3).equals(List.of("Abyssal bludgeon", "Zombie axe")), "Icon and text links deduplicate without reordering");
         require(parsed.methods.get(0).specials.equals(List.of("Bandos godsword")), "Special weapons cannot leak into main-weapon row");
@@ -72,6 +73,38 @@ public final class WikiGearChecks
         });
         System.out.println("Wiki parser, Araxxor owned gear, protection, special role, cache and bank rank lifecycle checks passed.");
     }
+    private static void verifyHttpTransport(String html) throws Exception
+    {
+        AtomicReference<okhttp3.Request> sent = new AtomicReference<>();
+        com.google.gson.JsonObject parse = new com.google.gson.JsonObject();
+        parse.addProperty("title", "Araxxor/Strategies"); parse.addProperty("text", html);
+        com.google.gson.JsonObject root = new com.google.gson.JsonObject(); root.add("parse", parse);
+        okhttp3.OkHttpClient client = new okhttp3.OkHttpClient.Builder().addInterceptor(chain -> {
+            sent.set(chain.request());
+            return new okhttp3.Response.Builder().request(chain.request()).protocol(okhttp3.Protocol.HTTP_1_1)
+                .code(200).message("OK").body(okhttp3.ResponseBody.create(okhttp3.MediaType.parse("application/json"), root.toString())).build();
+        }).build();
+        require(WikiStrategyService.fetch(client, "Araxxor/Strategies").methods.size() == 2,
+            "Wiki requests use the supplied client and parse its response");
+        require(sent.get().url().host().equals("oldschool.runescape.wiki")
+            && "Araxxor/Strategies".equals(sent.get().url().queryParameter("page")), "Only the public page title is requested from the Wiki host");
+        for (int code : new int[] {302, 503})
+        {
+            okhttp3.OkHttpClient.Builder builder = client.newBuilder(); builder.interceptors().clear();
+            builder.addInterceptor(chain -> {
+                return new okhttp3.Response.Builder().request(chain.request()).protocol(okhttp3.Protocol.HTTP_1_1)
+                    .code(code).message("Unavailable").body(okhttp3.ResponseBody.create(null, "")).build();
+            });
+            try { WikiStrategyService.fetch(builder.build(), "Araxxor/Strategies"); throw new AssertionError("Non-200 response accepted"); }
+            catch (java.io.IOException expected) { }
+        }
+        okhttp3.OkHttpClient.Builder large = client.newBuilder(); large.interceptors().clear();
+        large.addInterceptor(chain -> new okhttp3.Response.Builder().request(chain.request()).protocol(okhttp3.Protocol.HTTP_1_1)
+            .code(200).message("OK").body(okhttp3.ResponseBody.create(null, new byte[2_000_001])).build());
+        try { WikiStrategyService.fetch(large.build(), "Araxxor/Strategies"); throw new AssertionError("Oversized response accepted"); }
+        catch (java.io.IOException expected) { }
+    }
+
     private static String row(String slot, String... items)
     {
         StringBuilder value = new StringBuilder("<tr><th><img alt=\"").append(slot).append("\"></th>");
