@@ -1,6 +1,6 @@
 # Ultimate Slayer — development blueprint
 
-Prepared for Kieron / imth3keeza0 · 4 November 2026
+Prepared for Kieron / KEEZA0 · 4 November 2026
 
 Status: research and design only. No plugin implementation, repository creation, existing project changes or submission has been performed. This document consolidates the supplied Pasted text.txt handoff and source checks. Proposed architecture and acceptance criteria below are design decisions, not claims of tested behavior.
 
@@ -14,7 +14,7 @@ Three release gates remain: verify bank event ordering in a live client; settle 
 
 ## 2. Binding requirements
 
-- Working name Ultimate Slayer; author identity imth3keeza0.
+- Working name Ultimate Slayer; author identity KEEZA0.
 - Every substantial feature has an individual switch and a category master switch. Disabled modules stop their listeners, jobs and overlays where practical.
 - Reference-only use works without automatic task detection, bank access or network requests.
 - Capture bank contents only once per legitimate bank opening, after contents are available. Never scan continuously, on every tick, after each withdrawal, or during combat. Refresh only at the next opening.
