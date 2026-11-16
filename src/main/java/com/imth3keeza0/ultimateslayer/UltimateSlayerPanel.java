@@ -308,15 +308,16 @@ public final class UltimateSlayerPanel extends PluginPanel
             { gear.add(label("Personal preset selected: these items are highlighted in blue when you open your bank.", BankGearOverlay.rankColor(1))); }
             JButton savePreset = new JButton("Save current equipment + inventory for this task");
             styleButton(savePreset); savePreset.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
-            savePreset.setEnabled(state.loggedIn && state.remaining > 0 && previewTask == null);
-            savePreset.setToolTipText("Save your actual worn gear and 28 inventory slots for this active task. Nothing is withdrawn automatically.");
-            savePreset.addActionListener(e -> saveLoadoutAction.accept(state.task, TaskLoadout.capture(state)));
+            savePreset.setEnabled(state.loggedIn && (state.remaining > 0 || previewTask != null)
+                && !TaskLoadoutStore.taskKey(contextTask()).isEmpty());
+            savePreset.setToolTipText("Save your worn gear and 28 inventory slots for this selected task or preview. Nothing is withdrawn automatically.");
+            savePreset.addActionListener(e -> saveLoadoutAction.accept(contextTask(), TaskLoadout.capture(state)));
             gear.add(savePreset);
-            if (personal != null && previewTask == null)
+            if (personal != null)
             {
                 JButton deletePreset = new JButton("Delete my setup for this task"); styleButton(deletePreset);
                 deletePreset.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
-                deletePreset.addActionListener(e -> removeLoadoutAction.accept(state.task));
+                deletePreset.addActionListener(e -> removeLoadoutAction.accept(contextTask()));
                 gear.add(deletePreset);
             }
             if (!loadoutStatus.isEmpty()) { gear.add(label(loadoutStatus, MUTED)); }
