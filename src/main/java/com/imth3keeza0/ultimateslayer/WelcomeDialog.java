@@ -42,14 +42,14 @@ final class WelcomeDialog
             Image image = logo.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
             header.add(new JLabel(new ImageIcon(image)), BorderLayout.WEST);
         }
-        header.add(new JLabel("<html><body style='color:#eeeeee;font-family:sans-serif'><h1 style='color:#57d6dc'>Ultimate Slayer</h1><p><b>Created by Th3keeza0</b></p><p>OSRS geezers · v0.8.0</p></body></html>"), BorderLayout.CENTER);
+        header.add(new JLabel("<html><body style='color:#eeeeee;font-family:sans-serif'><h1 style='color:#57d6dc'>Ultimate Slayer</h1><p><b>Created by KEEZA0</b></p><p>OSRS geezers · v0.10.2</p></body></html>"), BorderLayout.CENTER);
         panel.add(header, BorderLayout.NORTH);
         JLabel text = new JLabel("<html><body style='width:370px;color:#eeeeee;font-family:sans-serif'>"
             + "<h3 style='color:#57d6dc'>Get started</h3><p><b>Open your bank once</b> to capture the equipment you own. Withdrawals and searches do not scan it again; close and reopen to refresh.</p><br>"
             + "<p><b>Choose the actual monster variant</b> in the sidebar. Your real assignment stays separate from any preview.</p><br>"
             + "<p><b>Compare owned setups:</b> choose a spell if needed, check the on-task, charge and prayer assumptions, then press <b>Find best modeled setup</b>. Use <b>Show in draft</b> to view a result. This never equips or moves anything in game.</p><br>"
             + "<h3>Know what is being compared</h3><p>Estimates cover the supported normal attacks and set effects. The search is bounded, and some weapons/boss mechanics are not modeled. <b>CHECK</b> means requirements or item state still need confirming. Your snapshot is local to this character; it is never uploaded.</p><br>"
-            + "<h3 style='color:#efc370'>Join OSRS geezers</h3><p>Want to join the clan? Add <b>Th3keeza0</b> in game, or join our Discord below.</p><br>"
+            + "<h3 style='color:#efc370'>Join OSRS geezers</h3><p>Want to join the clan? Add <b>KEEZA0</b> in game, or join our Discord below.</p><br>"
             + "<p style='color:#b8bec8'>This welcome appears once. Reopen it with <b>Info</b> in the sidebar or <b>Show welcome</b> in plugin settings.</p></body></html>");
         panel.add(text, BorderLayout.CENTER);
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0)); buttons.setOpaque(false);
