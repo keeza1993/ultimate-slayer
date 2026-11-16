@@ -224,7 +224,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         JButton info = new JButton("Info"); styleButton(info); info.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
         info.addActionListener(e -> infoAction.run()); header.add(info);
         addBlock(header);
-        addBlock(label("Version 0.10.1", MUTED));
+        addBlock(label("Version 0.10.2", MUTED));
 
         JPanel context = card("TASK / LOCATION");
         JComboBox<String> preview = new JComboBox<>(TaskReferenceData.tasks());
