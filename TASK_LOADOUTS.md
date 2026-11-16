@@ -20,7 +20,7 @@
 - A selected preset paints highlights on visible items in the normal personal bank. The existing Wiki rank overlay is unchanged in the Wiki mode. Both overlays use the current bank widget view and do not enumerate a bank container.
 - Blue means **personally selected**, not mathematically best. Existing Wiki rankings remain optional and distinct from your personal choices. Missing required protections are still warned about in the existing Requirements section.
 - Save records exact item IDs and inventory quantities at the moment of clicking. A different potion dose or equipment charge state is not silently treated as identical. This is a starting version: no manual slot editing, wildcard substitutions or missing-quantity badges yet.
-- Saves only when an actual Slayer task is active (not a preview). No automatic game input.
+- Saves for an active Slayer task or a deliberately selected task preview; a preview does not change the in-game assignment. No automatic game input.
 - Presets use a locally stored UTF-8 schema keyed by the SHA-256 of RuneLite's RSProfileKey. Changing in-game display name to KEEZA0 should not change that RuneLite profile key. Existing bank snapshots remain untouched.
 - Storage is under the plugin's local data folder, not synced RuneLite config. The controller uses the same bounded serial IO queue as bank snapshots and never sends saved item lists to network services.
 - The normal Plugin Hub release remains **0.10.1** while this branch is tested.
