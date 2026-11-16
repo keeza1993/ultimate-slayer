@@ -1,10 +1,10 @@
 # Task-specific setups — experimental
 
-**Branch:** `feature/task-loadout-presets` (not submitted to Plugin Hub).
+**Source version:** 0.10.2 (not submitted to Plugin Hub).
 
 ## In-game trial
 
-1. Run this branch locally: `gradlew.bat run` (JDK 17 recommended). Make sure another copy of Ultimate Slayer is not running.
+1. Run the updated source locally: `gradlew.bat run` (JDK 17 recommended). Make sure another copy of Ultimate Slayer is not running.
 2. Log in as your RuneLite account and make sure a real Slayer task is active.
 3. Equip your preferred main weapon, armour and jewellery; pack potions, food, teleport items, rune pouch and other inventory supplies exactly as you want.
 4. In Ultimate Slayer > **Gear**, click **Save current equipment + inventory for this task**.
@@ -23,7 +23,7 @@
 - Saves for an active Slayer task or a deliberately selected task preview; a preview does not change the in-game assignment. No automatic game input.
 - Presets use a locally stored UTF-8 schema keyed by the SHA-256 of RuneLite's RSProfileKey. Changing in-game display name to KEEZA0 should not change that RuneLite profile key. Existing bank snapshots remain untouched.
 - Storage is under the plugin's local data folder, not synced RuneLite config. The controller uses the same bounded serial IO queue as bank snapshots and never sends saved item lists to network services.
-- The normal Plugin Hub release remains **0.10.1** while this branch is tested.
+- This source update is **0.10.2**; merging it does not publish a Plugin Hub release.
 
 ## How to verify the code
 
