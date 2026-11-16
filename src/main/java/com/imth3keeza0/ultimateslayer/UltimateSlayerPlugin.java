@@ -63,6 +63,9 @@ public final class UltimateSlayerPlugin extends Plugin
     @Inject private ConfigManager configManager;
     @Inject private net.runelite.client.ui.overlay.OverlayManager overlayManager;
     @Inject private BankGearOverlay bankGearOverlay;
+    private volatile TaskLoadoutController taskLoadoutController;
+    private volatile Map<String, TaskLoadout> taskLoadouts = Map.of();
+    private volatile String taskLoadoutStatus = "";
     private WikiStrategyService wikiService;
     private volatile BankSnapshotController bank;
     private volatile UltimateSlayerPanel panel;
@@ -88,11 +91,35 @@ public final class UltimateSlayerPlugin extends Plugin
         wikiService = new WikiStrategyService(this::getPluginDirectory, httpClient);
         overlayManager.add(bankGearOverlay);
         ++generation;
+        taskLoadoutController = new TaskLoadoutController(client, clientThread, configManager, this::getPluginDirectory,
+            presets -> {
+                taskLoadouts = presets;
+                final long token = generation;
+                SwingUtilities.invokeLater(() -> {
+                    if (active && token == generation && panel != null) { panel.setTaskLoadouts(presets); }
+                });
+            },
+            message -> {
+                taskLoadoutStatus = message;
+                final long token = generation;
+                SwingUtilities.invokeLater(() -> {
+                    if (active && token == generation && panel != null) { panel.setTaskLoadoutStatus(message); }
+                });
+            });
+        taskLoadoutController.start();
         if (config.bankEnabled()) { startBank(); }
         SwingUtilities.invokeLater(() -> {
             if (!active) { return; }
             panel = new UltimateSlayerPanel(config, this::manualRefresh);
             panel.setRankListener(bankGearOverlay::setRanks);
+            panel.setSavedHighlightListener(bankGearOverlay::setSavedItems);
+            panel.setTaskLoadoutActions((task, preset) -> {
+                if (taskLoadoutController != null) { taskLoadoutController.save(task, preset); }
+            }, task -> {
+                if (taskLoadoutController != null) { taskLoadoutController.remove(task); }
+            });
+            panel.setTaskLoadouts(taskLoadouts);
+            panel.setTaskLoadoutStatus(taskLoadoutStatus);
             panel.setWikiService(wikiService);
             panel.setSupplyPriorityAction((key, priority) -> configManager.setConfiguration(UltimateSlayerConfig.GROUP, key, priority));
             panel.setInfoAction(() -> showWelcome(true));
@@ -110,7 +137,11 @@ public final class UltimateSlayerPlugin extends Plugin
     protected void shutDown()
     {
         active = false;
-        bankGearOverlay.setRanks(Map.of()); overlayManager.remove(bankGearOverlay);
+        bankGearOverlay.setRanks(Map.of());
+        bankGearOverlay.setSavedItems(Set.of());
+        overlayManager.remove(bankGearOverlay);
+        if (taskLoadoutController != null) { taskLoadoutController.stop(); taskLoadoutController = null; }
+        taskLoadouts = Map.of(); taskLoadoutStatus = "";
         if (wikiService != null) { wikiService.close(); wikiService = null; }
         ++catalogRevision;
         ownedCatalog = null;
@@ -133,13 +164,19 @@ public final class UltimateSlayerPlugin extends Plugin
         if (event.getGameState() != GameState.LOGGED_IN)
         {
             bankGearOverlay.setRanks(Map.of());
+            bankGearOverlay.setSavedItems(Set.of());
             final long token = ++generation;
+            if (taskLoadoutController != null) { taskLoadoutController.accountTransition(); }
             if (bank != null) { bank.accountTransition(); }
             SwingUtilities.invokeLater(() -> {
                 if (token == generation && panel != null) { panel.update(SidebarState.empty(), new HashMap<>()); }
             });
         }
-        else { if (bank != null) { bank.loggedIn(); } requestRefresh(); }
+        else {
+            if (taskLoadoutController != null) { taskLoadoutController.loggedIn(); }
+            if (bank != null) { bank.loggedIn(); }
+            requestRefresh();
+        }
     }
 
     @Subscribe
@@ -312,7 +349,9 @@ public final class UltimateSlayerPlugin extends Plugin
     public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
     {
         bankGearOverlay.setRanks(Map.of());
+        bankGearOverlay.setSavedItems(Set.of());
         ++generation;
+        if (taskLoadoutController != null) { taskLoadoutController.accountTransition(); taskLoadoutController.loggedIn(); }
         SwingUtilities.invokeLater(() -> { if (panel != null) { panel.resetAccountContext(); panel.refreshAppearance(); } });
         if (bank != null) { bank.accountTransition(); bank.loggedIn(); }
         requestRefresh();
@@ -322,7 +361,9 @@ public final class UltimateSlayerPlugin extends Plugin
     public void onProfileChanged(ProfileChanged event)
     {
         bankGearOverlay.setRanks(Map.of());
+        bankGearOverlay.setSavedItems(Set.of());
         ++generation;
+        if (taskLoadoutController != null) { taskLoadoutController.accountTransition(); taskLoadoutController.loggedIn(); }
         SwingUtilities.invokeLater(() -> { if (panel != null) { panel.resetAccountContext(); panel.refreshAppearance(); } });
         if (bank != null) { bank.stop(); bank = null; }
         if (active && config.bankEnabled()) { startBank(); }
