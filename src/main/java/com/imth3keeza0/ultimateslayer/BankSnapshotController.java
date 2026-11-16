@@ -226,7 +226,7 @@ public final class BankSnapshotController
         if (!LocalSnapshotIo.submit(action) && running) { status.accept("Local storage busy. Please try again."); }
     }
 
-    private static String hash(String profile)
+    static String hash(String profile)
     {
         try
         {
