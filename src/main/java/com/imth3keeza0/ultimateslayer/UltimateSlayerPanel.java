@@ -40,6 +40,21 @@ public final class UltimateSlayerPanel extends PluginPanel
     private String wikiKey = "";
     private long wikiRevision;
     private java.util.function.Consumer<Map<Integer, Integer>> rankListener = ranks -> {};
+
+    private java.util.function.Consumer<java.util.Set<Integer>> savedHighlightListener = ignored -> {};
+    private java.util.function.BiConsumer<String, TaskLoadout> saveLoadoutAction = (task, setup) -> {};
+    private java.util.function.Consumer<String> removeLoadoutAction = ignored -> {};
+    private Map<String, TaskLoadout> taskLoadouts = Map.of();
+    private boolean personalMode = true;
+    private String loadoutStatus = "";
+    public void setTaskLoadoutActions(java.util.function.BiConsumer<String, TaskLoadout> save,
+                                      java.util.function.Consumer<String> remove)
+    { saveLoadoutAction = save; removeLoadoutAction = remove; }
+    public void setSavedHighlightListener(java.util.function.Consumer<java.util.Set<Integer>> listener)
+    { savedHighlightListener = listener; }
+    public void setTaskLoadouts(Map<String, TaskLoadout> next) { taskLoadouts = Map.copyOf(next); rebuild(); }
+    public void setTaskLoadoutStatus(String message) { loadoutStatus = message; rebuild(); }
+    private TaskLoadout savedForTask() { return taskLoadouts.get(TaskLoadoutStore.taskKey(contextTask())); }
     public void setRankListener(java.util.function.Consumer<Map<Integer, Integer>> listener) { rankListener = listener; }
     public void setWikiService(WikiStrategyService service) { wikiService = service; rebuild(); }
     private String strategyTarget()
@@ -87,7 +102,7 @@ public final class UltimateSlayerPanel extends PluginPanel
     private String combatStatus = "Choose a monster variant, then compare your owned gear.";
     private List<OwnedGearPlanner.Gear> wornGear = List.of();
     public void setWornGear(List<OwnedGearPlanner.Gear> gear) { wornGear = List.copyOf(gear); }
-    public void disposePanel() { disposed = true; ++wikiRevision; rankListener.accept(Map.of()); invalidateCombat(); combatWorker.shutdownNow(); }
+    public void disposePanel() { disposed = true; ++wikiRevision; rankListener.accept(Map.of()); savedHighlightListener.accept(java.util.Set.of()); invalidateCombat(); combatWorker.shutdownNow(); }
     public void combatSettingsChanged() { if (!config.combatEnabled()) { invalidateCombat(); } rebuild(); }
     private void invalidateCombat()
     {
@@ -113,6 +128,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         wikiProfile = null; wikiMethod = null; wikiKey = ""; ++wikiRevision; rankListener.accept(Map.of());
         plannedSpell = "Choose spell";
         planningSnapshot = null;
+        taskLoadouts = Map.of();
         previewTask = null;
         locationChoice = null;
         exemption = TaskReferenceData.Exemption.UNKNOWN;
@@ -208,7 +224,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         JButton info = new JButton("Info"); styleButton(info); info.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
         info.addActionListener(e -> infoAction.run()); header.add(info);
         addBlock(header);
-        addBlock(label("Version 0.10.1", MUTED));
+        addBlock(label("Version 0.10.2", MUTED));
 
         JPanel context = card("TASK / LOCATION");
         JComboBox<String> preview = new JComboBox<>(TaskReferenceData.tasks());
@@ -268,21 +284,43 @@ public final class UltimateSlayerPanel extends PluginPanel
         if (config.equipmentEnabled())
         {
             JPanel gear = card("EQUIPMENT");
-            if (config.ownedGearEnabled())
+            TaskLoadout personal = savedForTask();
+            JPanel modes = row();
+            ButtonGroup modeGroup = new ButtonGroup();
+            String[] options = {"My saved", "Wiki / owned", "Currently worn"};
+            int selection = !showOwned ? 2 : personalMode && personal != null ? 0 : 1;
+            for (int i = 0; i < options.length; i++)
             {
-                JPanel modes = row();
-                ButtonGroup modeGroup = new ButtonGroup();
-                for (boolean mode : new boolean[]{true, false})
-                {
-                    JToggleButton choice = new JToggleButton(mode ? "Owned draft" : "Currently worn", showOwned == mode);
-                    choice.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
-                    styleButton(choice);
-                    choice.addActionListener(e -> { showOwned = mode; rebuild(); });
-                    modeGroup.add(choice);
-                    modes.add(choice);
-                }
-                gear.add(modes);
+                final int option = i;
+                JToggleButton choice = new JToggleButton(options[i], selection == i);
+                choice.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+                styleButton(choice);
+                choice.setToolTipText(i == 0 ? "Your saved equipment and inventory; highlights these in your bank" :
+                    i == 1 ? "Wiki-ranked owned options; highlights ranked items in your bank" : "Currently worn equipment and carried inventory");
+                choice.addActionListener(e -> { showOwned = option != 2; personalMode = option == 0; rebuild(); });
+                modeGroup.add(choice);
+                modes.add(choice);
             }
+            gear.add(modes);
+            if (personal == null)
+            { gear.add(label("No personal setup saved for this task yet. Equip your preferred gear and inventory, then save them below.", MUTED)); }
+            else if (personalMode && showOwned)
+            { gear.add(label("Personal preset selected: these items are highlighted in blue when you open your bank.", BankGearOverlay.rankColor(1))); }
+            JButton savePreset = new JButton("Save current equipment + inventory for this task");
+            styleButton(savePreset); savePreset.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+            savePreset.setEnabled(state.loggedIn && (state.remaining > 0 || previewTask != null)
+                && !TaskLoadoutStore.taskKey(contextTask()).isEmpty());
+            savePreset.setToolTipText("Save your worn gear and 28 inventory slots for this selected task or preview. Nothing is withdrawn automatically.");
+            savePreset.addActionListener(e -> saveLoadoutAction.accept(contextTask(), TaskLoadout.capture(state)));
+            gear.add(savePreset);
+            if (personal != null)
+            {
+                JButton deletePreset = new JButton("Delete my setup for this task"); styleButton(deletePreset);
+                deletePreset.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+                deletePreset.addActionListener(e -> removeLoadoutAction.accept(contextTask()));
+                gear.add(deletePreset);
+            }
+            if (!loadoutStatus.isEmpty()) { gear.add(label(loadoutStatus, MUTED)); }
             JPanel styles = row();
             ButtonGroup group = new ButtonGroup();
             for (String style : new String[]{"Melee", "Ranged", "Magic"})
@@ -307,9 +345,10 @@ public final class UltimateSlayerPanel extends PluginPanel
                 subtype.setSelectedItem(meleeType); subtype.setAlignmentX(LEFT_ALIGNMENT); subtype.setPreferredSize(new Dimension(176, 28)); subtype.setMaximumSize(new Dimension(176, 28));
                 subtype.addActionListener(e -> { meleeType = (String) subtype.getSelectedItem(); draftCache.clear(); invalidateCombat(); rebuild(); }); gear.add(subtype);
             }
-            boolean ownedMode = config.ownedGearEnabled() && showOwned;
+            boolean savedMode = personal != null && showOwned && personalMode;
+            boolean ownedMode = config.ownedGearEnabled() && showOwned && !savedMode;
             OwnedGearPlanner.Draft draft = ownedMode ? contextDraft() : null;
-            gear.add(label(ownedMode ? "Owned setup draft - check marked items" : "Currently worn", MUTED));
+            gear.add(label(savedMode ? "My saved setup - task-specific" : ownedMode ? "Wiki / owned setup draft - check marked items" : "Currently worn", MUTED));
             if (ownedMode && config.wikiGearEnabled() && wikiMethod == null)
             { gear.add(label("No Wiki method selected: the grid below is a generic bonus shortlist. Task-specific bank ranks are off.", GOLD)); }
             if (ownedMode && owned == null) { gear.add(label("Open your bank to load owned options. Bank snapshots must be enabled.", GOLD)); }
@@ -327,7 +366,8 @@ public final class UltimateSlayerPanel extends PluginPanel
             {
                 int slot = slots[i];
                 OwnedGearPlanner.Gear option = draft == null ? null : draft.selected.get(slot);
-                JComponent cell = slot < 0 ? spacer() : tile(ownedMode ? (option == null ? -1 : option.id) : state.equipmentAt(slot), 1, names[i]);
+                JComponent cell = slot < 0 ? spacer() : tile(savedMode ? personal.equipmentAt(slot)
+                    : ownedMode ? (option == null ? -1 : option.id) : state.equipmentAt(slot), 1, names[i]);
                 if (draft != null && slot >= 0)
                 {
                     String check = option == null ? null : draft.unverified.get(option.id);
@@ -348,6 +388,7 @@ public final class UltimateSlayerPanel extends PluginPanel
             JPanel centred = row();
             centred.add(grid);
             gear.add(centred);
+            if (savedMode) { gear.add(label("Your saved equipment is used even when the Wiki ranks something else higher. Required protection is still shown separately.", MUTED)); }
             if (draft != null)
             {
                 List<OwnedGearPlanner.Gear> alternatives = draft.alternatives.get(selectedOwnedSlot);
@@ -381,12 +422,14 @@ public final class UltimateSlayerPanel extends PluginPanel
         if (config.inventoryEnabled())
         {
             JPanel inventory = card("INVENTORY");
-            inventory.add(label("Currently carried � 28 slots", MUTED));
+            TaskLoadout savedInventory = showOwned && personalMode ? savedForTask() : null;
+            inventory.add(label(savedInventory == null ? "Currently carried - 28 slots" : "My saved inventory - 28 slots (bank highlights active)", MUTED));
             JPanel grid = new JPanel(new GridLayout(7, 4, 4, 4));
             grid.setOpaque(false);
             for (int i = 0; i < 28; i++)
             {
-                grid.add(tile(state.inventoryAt(i), state.quantityAt(i), "Empty"));
+                grid.add(tile(savedInventory == null ? state.inventoryAt(i) : savedInventory.inventoryAt(i),
+                    savedInventory == null ? state.quantityAt(i) : savedInventory.quantityAt(i), "Empty"));
             }
             JPanel centred = row();
             centred.add(grid);
@@ -604,6 +647,14 @@ public final class UltimateSlayerPanel extends PluginPanel
     }
     private void publishRanks()
     {
+        TaskLoadout selected = showOwned && personalMode ? savedForTask() : null;
+        if (selected != null && state.loggedIn && (previewTask != null || state.remaining > 0))
+        {
+            savedHighlightListener.accept(selected.itemIds());
+            rankListener.accept(Map.of());
+            return;
+        }
+        savedHighlightListener.accept(java.util.Set.of());
         if (!config.bankRanksEnabled() || !config.wikiGearEnabled() || !config.equipmentEnabled()
             || !config.ownedGearEnabled() || !showOwned || wikiMethod == null || owned == null || !state.loggedIn
             || previewTask == null && state.remaining <= 0)

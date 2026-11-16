@@ -36,6 +36,9 @@ public interface UltimateSlayerConfig extends Config
     @ConfigItem(keyName = "bankRanksEnabled", name = "Bank gear ranks", description = "Number and colour your owned Wiki-ranked choices: 1 green, 2 yellow, 3 red. Requires an active task or explicit preview", position = 17)
     default boolean bankRanksEnabled() { return true; }
 
+    @ConfigItem(keyName = "loadoutBankHighlightsEnabled", name = "Saved setup bank highlights", description = "Highlight your chosen task preset items in your personal bank; does not move or withdraw items", position = 28)
+    default boolean loadoutBankHighlightsEnabled() { return true; }
+
     @ConfigItem(keyName = "suppliesEnabled", name = "Supply planning", description = "Task trip checklist with priorities, live carried counts and capture-time bank stock; never rescans the bank", position = 10)
     default boolean suppliesEnabled() { return true; }
 

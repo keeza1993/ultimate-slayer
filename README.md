@@ -2,7 +2,7 @@
 
 <img src="docs/images/ultimate-slayer-logo.png" alt="OSRS GEEZAS Ultimate Slayer" width="360">
 
-Plan Slayer tasks and compare equipment you own from a RuneLite sidebar. Created by **Th3keeza0** for **OSRS geezers**.
+Plan Slayer tasks and compare equipment you own from a RuneLite sidebar. Created by **KEEZA0** for **OSRS geezers**.
 
 ## Features
 
@@ -15,6 +15,14 @@ Plan Slayer tasks and compare equipment you own from a RuneLite sidebar. Created
 - Plan protection, prayer, food, tools and outbound/return teleports in a priority-sorted trip checklist. Live carried counts stay separate from bank-at-capture quantities. See [SUPPLIES.md](SUPPLIES.md).
 
 The plugin provides information and planning only. It never equips items, moves your character or performs game actions.
+
+## Task presets
+- In **Gear**, use **My saved** or **Wiki / owned** to choose which setup guides your bank.
+- While on an active Slayer assignment, equip your preferred items, arrange your inventory, then select **Save current equipment + inventory for this task**. This stores the exact 14 gear slots and 28 inventory slots/quantities locally for your RuneLite profile.
+- On your next assignment of the same task, **My saved** is selected automatically. Open your bank normally; matching item IDs have blue borders. Switch to **Wiki / owned** for the familiar green/yellow/red Wiki ranks.
+- These are visual highlights, **not** the full Inventory Setups filtered layout. The plugin cannot open the in-game bank, withdraw items or move items for you.
+- Saved setups are local per RuneLite profile and do not rely on your in-game display name. Nothing is sent to the Wiki.
+- Task presets are available in source version 0.10.2, separate from plugin-hub PR #20453. See [TASK_LOADOUTS.md](TASK_LOADOUTS.md).
 
 ## Use it
 
@@ -36,11 +44,11 @@ Optional public Wiki table updates send only monster/task page titles to the OSR
 
 ## Clan
 
-Want to join OSRS geezers? Add **Th3keeza0** in game or [join our Discord](https://discord.gg/UAAe6QEGD). The plugin opens this only when you click the button.
+Want to join OSRS geezers? Add **KEEZA0** in game or [join our Discord](https://discord.gg/UAAe6QEGD). The plugin opens this only when you click the button.
 
 ## Sources and development
 
-For a replacement update with files at the archive's top level, download **UltimateSlayer-update** from the successful build's artifacts, extract directly into your existing project folder, accept **Replace files**, and run `gradlew.bat run`. The sidebar version is **0.10.1**. GitHub's ordinary source ZIP still includes its own enclosing folder.
+For a replacement update with files at the archive's top level, download **UltimateSlayer-update** from the successful build's artifacts, extract directly into your existing project folder, accept **Replace files**, and run `gradlew.bat run`. The sidebar version is **0.10.2**. GitHub's ordinary source ZIP still includes its own enclosing folder.
 
 Data licences and attribution are documented in [THIRD_PARTY.md](THIRD_PARTY.md) and [SOURCES.md](SOURCES.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and [VALIDATION.md](VALIDATION.md) for validation coverage.
 
