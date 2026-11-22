@@ -43,8 +43,27 @@ public final class BankGearOverlay extends WidgetItemOverlay
             g.drawRoundRect(bounds.x + 1, bounds.y + 1, Math.max(1,bounds.width-2), Math.max(1,bounds.height-2), 5, 5);
             g.setColor(new Color(0,0,0,210)); g.fillOval(bounds.x + bounds.width-16, bounds.y+1, 15, 15);
             g.setColor(color); g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
-            g.drawString(personal ? "✓" : rank.toString(), bounds.x + bounds.width-13, bounds.y+12);
+            if (config.starBankBadges() && (personal || rank == 1))
+            {
+                g.fill(star(bounds.x + bounds.width - 8.5, bounds.y + 8.5, 6, 2.7));
+            }
+            else { g.drawString(personal ? "V" : rank.toString(), bounds.x + bounds.width-13, bounds.y+12); }
         }
         finally { g.dispose(); }
+    }
+
+    /** Vector badge stays readable even when the OS font has no star glyph. */
+    static java.awt.geom.Path2D star(double x, double y, double outer, double inner)
+    {
+        java.awt.geom.Path2D path = new java.awt.geom.Path2D.Double();
+        for (int i = 0; i < 10; i++)
+        {
+            double angle = -Math.PI / 2 + i * Math.PI / 5;
+            double radius = i % 2 == 0 ? outer : inner;
+            double px = x + Math.cos(angle) * radius, py = y + Math.sin(angle) * radius;
+            if (i == 0) { path.moveTo(px, py); } else { path.lineTo(px, py); }
+        }
+        path.closePath();
+        return path;
     }
 }

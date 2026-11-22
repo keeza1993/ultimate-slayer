@@ -10,7 +10,7 @@ repositories {
 }
 
 group = 'com.imth3keeza0.ultimateslayer'
-version = '0.10.2'
+version = '0.11.0'
 def runeLiteVersion = 'latest.release'
 
 dependencies {
@@ -27,7 +27,7 @@ tasks.register('run', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.imth3keeza0.ultimateslayer.UltimateSlayerLauncher'
     jvmArgs '-ea'
-    args '--developer-mode', '--safe-mode'
+    args '--developer-mode'
 }
 
 tasks.register('preview', JavaExec) {
@@ -119,3 +119,10 @@ tasks.register('verifyTaskLoadouts', JavaExec) {
     jvmArgs '-ea'
 }
 tasks.named('check') { dependsOn 'verifyTaskLoadouts' }
+
+tasks.register('verifyDropMarkers', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.imth3keeza0.ultimateslayer.DropMarkerChecks'
+    jvmArgs '-ea', '-Djava.awt.headless=true'
+}
+tasks.named('check') { dependsOn 'verifyDropMarkers' }

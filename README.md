@@ -12,6 +12,8 @@ Plan Slayer tasks and compare equipment you own from a RuneLite sidebar. Created
 - Review equipment requirements, spell plans and combat assumptions before choosing a setup.
 - Enable the modules you want in plugin settings.
 - Compact sidebar: your task stays visible; Gear, Supplies and Travel open on click. Detailed settings and references are under More options. Open/closed state survives sidebar refreshes.
+- Optional vector-star badges on saved equipment/inventory bank tiles and rank-one Wiki choices. Disable Star bank badges to restore the original badges; Saved setup bank highlights and Bank gear ranks remain separate switches.
+- Optional drop tile markers beside Ground Items: GE stack value wins over rune/herb colours. Each band/category has its own toggle and colour picker. See [DROP_MARKERS.md](DROP_MARKERS.md).
 - Plan protection, prayer, food, tools and outbound/return teleports in a priority-sorted trip checklist. Live carried counts stay separate from bank-at-capture quantities. See [SUPPLIES.md](SUPPLIES.md).
 
 The plugin provides information and planning only. It never equips items, moves your character or performs game actions.
@@ -28,7 +30,7 @@ The plugin provides information and planning only. It never equips items, moves 
 
 1. Open your personal bank once. Close/reopen for a new ownership snapshot; withdrawals, tabs and searches do not recapture.
 2. In the sidebar choose the actual **monster variant**. Task previews stay separate from your real assignment and assigned-area restrictions.
-3. Choose a **Wiki strategy** method. The owned view lists up to three owned choices per slot and highlights them in your personal bank: **1 green, 2 yellow, 3 red**. Main and special-attack weapons are separate. Review conditional notes using the source-page link. See [WIKI_GEAR.md](WIKI_GEAR.md).
+3. Choose a **Wiki strategy** method. The owned view lists up to three owned choices per slot and highlights them in your personal bank: **star green, 2 yellow, 3 red** (turn off Star bank badges for the original 1). Main and special-attack weapons are separate. Review conditional notes using the source-page link. See [WIKI_GEAR.md](WIKI_GEAR.md).
 4. Check the combat assumptions and press **Find best modeled setup**. Select **Show in draft**, then expand **Why this setup / limits** for the applied effects, rolls and exclusions.
 5. CHECK items still need requirement/state confirmation. Never treat a planning result as proof you can access the area or complete the whole task safely.
 
@@ -48,7 +50,7 @@ Want to join OSRS geezers? Add **KEEZA0** in game or [join our Discord](https://
 
 ## Sources and development
 
-For a replacement update with files at the archive's top level, download **UltimateSlayer-update** from the successful build's artifacts, extract directly into your existing project folder, accept **Replace files**, and run `gradlew.bat run`. The sidebar version is **0.10.2**. GitHub's ordinary source ZIP still includes its own enclosing folder.
+For a replacement update with files at the archive's top level, extract **UltimateSlayer-0.11.0-update.zip** directly into your existing project folder, accept **Replace files**, and run `gradlew.bat run`. The sidebar version is **0.11.0**. GitHub's ordinary source ZIP includes its own enclosing folder. See [UPDATE-0.11.0.md](UPDATE-0.11.0.md) for installation and validation limits.
 
 Data licences and attribution are documented in [THIRD_PARTY.md](THIRD_PARTY.md) and [SOURCES.md](SOURCES.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and [VALIDATION.md](VALIDATION.md) for validation coverage.
 

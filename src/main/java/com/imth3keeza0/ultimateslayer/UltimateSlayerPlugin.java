@@ -63,6 +63,7 @@ public final class UltimateSlayerPlugin extends Plugin
     @Inject private ConfigManager configManager;
     @Inject private net.runelite.client.ui.overlay.OverlayManager overlayManager;
     @Inject private BankGearOverlay bankGearOverlay;
+    @Inject private DropMarkerOverlay dropMarkerOverlay;
     private volatile TaskLoadoutController taskLoadoutController;
     private volatile Map<String, TaskLoadout> taskLoadouts = Map.of();
     private volatile String taskLoadoutStatus = "";
@@ -90,6 +91,8 @@ public final class UltimateSlayerPlugin extends Plugin
         active = true;
         wikiService = new WikiStrategyService(this::getPluginDirectory, httpClient);
         overlayManager.add(bankGearOverlay);
+        overlayManager.add(dropMarkerOverlay);
+        clientThread.invokeLater(() -> { if (active) { dropMarkerOverlay.seedVisibleScene(); } });
         ++generation;
         taskLoadoutController = new TaskLoadoutController(client, clientThread, configManager, this::getPluginDirectory,
             presets -> {
@@ -140,6 +143,8 @@ public final class UltimateSlayerPlugin extends Plugin
         bankGearOverlay.setRanks(Map.of());
         bankGearOverlay.setSavedItems(Set.of());
         overlayManager.remove(bankGearOverlay);
+        dropMarkerOverlay.clear();
+        overlayManager.remove(dropMarkerOverlay);
         if (taskLoadoutController != null) { taskLoadoutController.stop(); taskLoadoutController = null; }
         taskLoadouts = Map.of(); taskLoadoutStatus = "";
         if (wikiService != null) { wikiService.close(); wikiService = null; }
@@ -163,6 +168,7 @@ public final class UltimateSlayerPlugin extends Plugin
         // Clear immediately on account transitions, including connection loss/hops.
         if (event.getGameState() != GameState.LOGGED_IN)
         {
+            dropMarkerOverlay.clear();
             bankGearOverlay.setRanks(Map.of());
             bankGearOverlay.setSavedItems(Set.of());
             final long token = ++generation;
@@ -173,11 +179,24 @@ public final class UltimateSlayerPlugin extends Plugin
             });
         }
         else {
+            dropMarkerOverlay.seedVisibleScene();
             if (taskLoadoutController != null) { taskLoadoutController.loggedIn(); }
             if (bank != null) { bank.loggedIn(); }
             requestRefresh();
         }
     }
+
+    @Subscribe
+    public void onItemSpawned(net.runelite.api.events.ItemSpawned event) { dropMarkerOverlay.spawned(event); }
+
+    @Subscribe
+    public void onItemDespawned(net.runelite.api.events.ItemDespawned event) { dropMarkerOverlay.despawned(event); }
+
+    @Subscribe
+    public void onItemQuantityChanged(net.runelite.api.events.ItemQuantityChanged event) { dropMarkerOverlay.quantityChanged(event); }
+
+    @Subscribe
+    public void onGameTick(net.runelite.api.events.GameTick event) { dropMarkerOverlay.rebuild(); }
 
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event)
@@ -222,6 +241,11 @@ public final class UltimateSlayerPlugin extends Plugin
     {
         if (UltimateSlayerConfig.GROUP.equals(event.getGroup()))
         {
+            clientThread.invokeLater(() -> {
+                if (!active) { return; }
+                if ("dropMarkersEnabled".equals(event.getKey())) { dropMarkerOverlay.seedVisibleScene(); }
+                else { dropMarkerOverlay.rebuild(); }
+            });
             if ("combatEnabled".equals(event.getKey())) { SwingUtilities.invokeLater(() -> { if (panel != null) { panel.combatSettingsChanged(); } }); }
             if ("showWelcome".equals(event.getKey()) && "true".equals(event.getNewValue()))
             { configManager.setConfiguration(UltimateSlayerConfig.GROUP, "showWelcome", false); showWelcome(true); }

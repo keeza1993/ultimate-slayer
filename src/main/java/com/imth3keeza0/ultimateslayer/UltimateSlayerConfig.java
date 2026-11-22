@@ -3,10 +3,46 @@ package com.imth3keeza0.ultimateslayer;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
+import net.runelite.client.config.ConfigSection;
+import java.awt.Color;
 
 @ConfigGroup(UltimateSlayerConfig.GROUP)
 public interface UltimateSlayerConfig extends Config
 {
+    @ConfigSection(name="Drop markers", description="Optional coloured ground-drop tiles alongside Ground Items", position=40)
+    String dropMarkersSection = "dropMarkers";
+
+    @ConfigItem(keyName="starBankBadges", name="Star bank badges", description="Show a star on saved setup items and rank-one Wiki bank choices; disable for the original badges", position=29)
+    default boolean starBankBadges() { return true; }
+
+    @ConfigItem(keyName="dropMarkersEnabled", name="Enable drop markers", description="Colour ground-item tiles using stack GE value first, then runes/herbs. No looting or game actions", section=dropMarkersSection, position=0)
+    default boolean dropMarkersEnabled() { return true; }
+    @ConfigItem(keyName="ownDropMarkersOnly", name="Only my/group drops", description="Only mark drops owned by you or your group; disable to include all visible ground items", section=dropMarkersSection, position=1)
+    default boolean ownDropMarkersOnly() { return true; }
+    @ConfigItem(keyName="dropMarkerLabels", name="Show marker item labels", description="Optional labels in addition to tile outlines. Leave off when using Ground Items labels", section=dropMarkersSection, position=2)
+    default boolean dropMarkerLabels() { return false; }
+
+    @ConfigItem(keyName="runeDropMarkers", name="Runes below 15k", description="Mark rune stacks below 15,000 gp; value bands take priority", section=dropMarkersSection, position=3)
+    default boolean runeDropMarkers() { return true; }
+    @ConfigItem(keyName="runeDropColor", name="Rune colour", description="Default pink", section=dropMarkersSection, position=4)
+    default Color runeDropColor() { return new Color(255, 105, 180); }
+    @ConfigItem(keyName="herbDropMarkers", name="Herbs below 15k", description="Mark clean, grimy and noted herb stacks below 15,000 gp", section=dropMarkersSection, position=5)
+    default boolean herbDropMarkers() { return true; }
+    @ConfigItem(keyName="herbDropColor", name="Herb colour", description="Default green", section=dropMarkersSection, position=6)
+    default Color herbDropColor() { return new Color(75, 220, 115); }
+    @ConfigItem(keyName="blueDropMarkers", name="15k to under 100k", description="Mark stacks worth at least 15,000 but less than 100,000 gp", section=dropMarkersSection, position=7)
+    default boolean blueDropMarkers() { return true; }
+    @ConfigItem(keyName="blueDropColor", name="15k band colour", description="Default blue", section=dropMarkersSection, position=8)
+    default Color blueDropColor() { return new Color(75, 150, 255); }
+    @ConfigItem(keyName="purpleDropMarkers", name="100k to under 500k", description="Mark stacks worth at least 100,000 but less than 500,000 gp", section=dropMarkersSection, position=9)
+    default boolean purpleDropMarkers() { return true; }
+    @ConfigItem(keyName="purpleDropColor", name="100k band colour", description="Default purple", section=dropMarkersSection, position=10)
+    default Color purpleDropColor() { return new Color(185, 95, 255); }
+    @ConfigItem(keyName="goldDropMarkers", name="500k and above", description="Mark stacks worth at least 500,000 gp", section=dropMarkersSection, position=11)
+    default boolean goldDropMarkers() { return true; }
+    @ConfigItem(keyName="goldDropColor", name="500k band colour", description="Default gold", section=dropMarkersSection, position=12)
+    default Color goldDropColor() { return new Color(255, 215, 0); }
+
     @ConfigItem(keyName="protectionPriority",name="Protection priority",description="Checklist order; does not remove protection requirements",position=18)
     default SupplyPlanner.Priority protectionPriority(){return SupplyPlanner.Priority.HIGH;}
     @ConfigItem(keyName="prayerPriority",name="Prayer supply priority",description="Priority of prayer potions and super restores",position=19)
@@ -33,7 +69,7 @@ public interface UltimateSlayerConfig extends Config
     @ConfigItem(keyName = "wikiOnlineEnabled", name = "Update public Wiki tables", description = "Fetch public monster/task page names only from OSRS Wiki in the background; caches for seven days. No bank or account data is sent", position = 16)
     default boolean wikiOnlineEnabled() { return true; }
 
-    @ConfigItem(keyName = "bankRanksEnabled", name = "Bank gear ranks", description = "Number and colour your owned Wiki-ranked choices: 1 green, 2 yellow, 3 red. Requires an active task or explicit preview", position = 17)
+    @ConfigItem(keyName = "bankRanksEnabled", name = "Bank gear ranks", description = "Mark owned Wiki choices: star/1 green, 2 yellow, 3 red. Requires an active task or explicit preview", position = 17)
     default boolean bankRanksEnabled() { return true; }
 
     @ConfigItem(keyName = "loadoutBankHighlightsEnabled", name = "Saved setup bank highlights", description = "Highlight your chosen task preset items in your personal bank; does not move or withdraw items", position = 28)
