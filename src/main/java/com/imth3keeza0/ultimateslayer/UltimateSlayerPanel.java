@@ -265,7 +265,7 @@ public final class UltimateSlayerPanel extends PluginPanel
         {
             JPanel task = card("YOUR TASK");
             task.add(label(state.task == null || state.task.isEmpty() ? "No task information" : state.task, Color.WHITE));
-            task.add(label(state.task == null ? (state.loggedIn ? "Task data unavailable ? refresh" : "Log in to see your task")
+            task.add(label(state.task == null ? (state.loggedIn ? "Task data unavailable � refresh" : "Log in to see your task")
                 : state.remaining + " remaining", MUTED));
             if (state.location != null && !state.location.isEmpty())
             {
@@ -713,7 +713,7 @@ public final class UltimateSlayerPanel extends PluginPanel
                 section.add(wiki);
             }
         }
-        section.add(label(catalog.monsters.size() + " monster variants ? " + catalog.equipment.size() + " equipment records. Offline reference snapshot: 5 Nov 2026.", MUTED));
+        section.add(label(catalog.monsters.size() + " monster variants � " + catalog.equipment.size() + " equipment records. Offline reference snapshot: 5 Nov 2026.", MUTED));
         addBlock(section);
     }
 
@@ -820,7 +820,7 @@ public final class UltimateSlayerPanel extends PluginPanel
             config.preferHouseTravel(),config.houseFairyRingConfirmed(),config.stafflessFairyRingsConfirmed());
         for(SupplyPlanner.Need need:SupplyPlanner.sorted(needs,config,planningState,planningSnapshot,missingSuppliesFirst))
         {
-            section.add(Box.createVerticalStrut(7));section.add(label(SupplyPlanner.priority(config,need.category)+" ? "+need.title,GOLD));
+            section.add(Box.createVerticalStrut(7));section.add(label(SupplyPlanner.priority(config,need.category)+" � "+need.title,GOLD));
             section.add(label(need.summary(planningState,planningSnapshot),need.packed(planningState)?BankGearOverlay.rankColor(1):MUTED));
             boolean details=expanded.getOrDefault("supply:"+need.key,false);
             JButton show=new JButton(details?"Hide details":"Choices / why");styleButton(show);show.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,10));
@@ -875,7 +875,7 @@ public final class UltimateSlayerPanel extends PluginPanel
             count.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
             tile.add(count, BorderLayout.NORTH);
         }
-        tile.setToolTipText(display == null ? emptyName : display.name + (quantity > 1 ? " ? " + quantity : ""));
+        tile.setToolTipText(display == null ? emptyName : display.name + (quantity > 1 ? " � " + quantity : ""));
         return tile;
     }
 

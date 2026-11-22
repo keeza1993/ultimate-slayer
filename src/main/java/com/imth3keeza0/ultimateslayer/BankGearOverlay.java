@@ -47,7 +47,7 @@ public final class BankGearOverlay extends WidgetItemOverlay
             {
                 g.fill(star(bounds.x + bounds.width - 8.5, bounds.y + 8.5, 6, 2.7));
             }
-            else { g.drawString(personal ? "V" : rank.toString(), bounds.x + bounds.width-13, bounds.y+12); }
+            else { g.drawString(personal ? "✓" : rank.toString(), bounds.x + bounds.width-13, bounds.y+12); }
         }
         finally { g.dispose(); }
     }
